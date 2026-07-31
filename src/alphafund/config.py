@@ -100,6 +100,10 @@ CLOUDFLARE_MODEL = os.environ.get(
 CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
 CLOUDFLARE_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
 
+NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+NVIDIA_MODEL = os.environ.get("NVIDIA_MODEL", "meta/llama-3.3-70b-instruct")
+NVIDIA_API_KEY = os.environ.get("NVIDIA_API_KEY", "")
+
 # LLM 供應商鏈：依序嘗試，某家 429/401/403 自動切換下一家（ADR-0007）
 _chain_env = os.environ.get("LLM_PROVIDER_CHAIN", "").strip()
 if _chain_env:
@@ -107,7 +111,7 @@ if _chain_env:
 elif os.environ.get("LLM_PROVIDER", "").strip():
     LLM_PROVIDER_CHAIN = [os.environ["LLM_PROVIDER"].strip()]
 else:
-    LLM_PROVIDER_CHAIN = ["openrouter", "gemini", "groq", "cloudflare"]
+    LLM_PROVIDER_CHAIN = ["openrouter", "gemini", "groq", "cloudflare", "nvidia"]
 
 # 保留 LLM_PROVIDER 相容（= 鏈之首）
 LLM_PROVIDER = LLM_PROVIDER_CHAIN[0]

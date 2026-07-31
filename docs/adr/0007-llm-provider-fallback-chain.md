@@ -11,6 +11,7 @@
 | Gemini | gemini-3.6-flash | RPD≈17/日 |
 | Groq | llama-3.3-70b-versatile | ~14,400 次/日 |
 | Cloudflare Workers AI | @cf/meta/llama-3.3-70b-instruct-fp8-fast | 10,000 neurons/日 |
+| NVIDIA NIM | meta/llama-3.3-70b-instruct | 免費 key（無需信用卡），額度寬裕 |
 
 切換條件：429（額度/速率限制）或 401/403（無效/未授權 key）自動切下一家；未設定 key 的供應商直接跳過。全數不可用才標記 `quota_skipped`。
 

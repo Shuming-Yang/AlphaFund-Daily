@@ -12,6 +12,7 @@ from alphafund.llm import (
     FallbackLLM,
     GeminiClient,
     GroqClient,
+    NvidiaNimClient,
     OpenRouterClient,
     QuotaExceeded,
     _extract_json,
@@ -155,6 +156,30 @@ def test_cloudflare_client_config_and_url():
 def test_cloudflare_client_requires_account_id():
     with pytest.raises(ValueError):
         CloudflareClient(account_id="", api_key="x")
+
+
+def test_nvidia_nim_client_config():
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"ok": 1}'}}]},
+        )
+
+    client = NvidiaNimClient(
+        api_key="nv-test",
+        model="meta/llama-3.3-70b-instruct",
+        transport=httpx.MockTransport(handler),
+    )
+    assert client.generate_json("s", "u") == {"ok": 1}
+    assert "integrate.api.nvidia.com/v1/chat/completions" in captured["url"]
+
+
+def test_nvidia_nim_requires_key():
+    with pytest.raises(ValueError):
+        NvidiaNimClient(api_key="")
 
 
 def test_fallback_llm_switches_on_429(monkeypatch):

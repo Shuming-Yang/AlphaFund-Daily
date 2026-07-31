@@ -27,6 +27,9 @@ from .config import (
     GROQ_API_URL,
     GROQ_MODEL,
     LLM_PROVIDER_CHAIN,
+    NVIDIA_API_KEY,
+    NVIDIA_API_URL,
+    NVIDIA_MODEL,
     OPENROUTER_API_KEY,
     OPENROUTER_API_URL,
     OPENROUTER_MODEL,
@@ -191,6 +194,19 @@ class CloudflareClient(OpenAICompatClient):
         return "CLOUDFLARE_API_TOKEN"
 
 
+class NvidiaNimClient(OpenAICompatClient):
+    """NVIDIA NIM（build.nvidia.com，免費 key、無需信用卡）。"""
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("api_key", NVIDIA_API_KEY)
+        kwargs.setdefault("url", NVIDIA_API_URL)
+        kwargs.setdefault("model", NVIDIA_MODEL)
+        super().__init__(**kwargs)
+
+    def key_env(self) -> str:
+        return "NVIDIA_API_KEY"
+
+
 class GeminiClient:
     """Gemini API（Free Tier）。"""
 
@@ -248,6 +264,8 @@ def build_client(provider: str) -> LLMClient:
         return GroqClient()
     if provider == "cloudflare":
         return CloudflareClient()
+    if provider == "nvidia":
+        return NvidiaNimClient()
     if provider == "openrouter":
         return OpenRouterClient()
     raise ValueError(f"未知 LLM 供應商: {provider}")
