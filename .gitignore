@@ -1,1 +1,13 @@
 Gemini-自動化基金報告 GitHub 專案.md
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# tool artifacts
+.playwright-mcp/
+# data snapshots (kept in repo by design, but ignore local run artifacts)
+data/tmp/
+# 最新清單工作檔（歷史留存以 data/history/<date>/*.json.gz 為主）
+data/universe.json

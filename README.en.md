@@ -52,12 +52,9 @@ This constraint guarantees every fund in the report can be purchased directly fr
 
 ### Settlement Currencies
 
-Only the following two share classes are kept:
+Only USD share classes are kept.
 
-- USD
-- TWD
-
-All other currencies (ZAR, AUD, EUR, CNY, JPY, etc.) are excluded to reduce exchange-rate noise and focus on mainstream reserve/settlement currencies.
+TDCC offshore-fund data contains no TWD (New Taiwan Dollar) share classes (see ADR-0004), so the currency filter covers USD only. Other currencies (ZAR, AUD, EUR, CNY, JPY, etc.) are excluded to reduce exchange-rate noise and focus on the mainstream reserve/settlement currency.
 
 ### Tax Category (100% Offshore Income)
 
@@ -74,7 +71,7 @@ For funds meeting the above conditions, both trading gains (capital gains) and d
 | Condition | Excluded |
 | :--- | :--- |
 | Channel | Funds not sold via the three designated channels |
-| Currency | Share classes other than USD / TWD |
+| Currency | Share classes other than USD |
 | Domicile | Taiwan-domiciled funds, TW-prefixed ISIN |
 | Income Type | Targets that are not 100% offshore income |
 
@@ -186,10 +183,15 @@ Detailed planning for each milestone will be expanded later using the "grill-wit
 ## Planned Directory Structure
 
 ```
-├── .github/workflows/        Daily 06:00 schedule
-├── config/                   Target fund list (3 channels / USD+TWD / offshore income)
-├── scripts/                  NAV & news fetching, AI analysis, report generation
-├── docs/                     Static report pages (published via GitHub Pages)
+├── .github/workflows/        Daily 06:00 schedule (M3)
+├── src/alphafund/            M1 data pipeline package (tdcc / news / filters / pipeline / cli)
+├── scripts/                  Entry points (run_m1.py)
+├── data/
+│   └── history/<date>/       Daily snapshots (snapshot / nav / news / universe, .json.gz)
+├── docs/
+│   ├── adr/                  Architecture decision records
+│   └── m1-design.md          M1 design document
+├── tests/                    Unit tests (fixtures)
 ├── README.md                 Traditional Chinese (default)
 ├── README.en.md              English
 └── LICENSE                   MIT

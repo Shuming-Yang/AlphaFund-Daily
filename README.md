@@ -52,12 +52,9 @@
 
 ### 計價幣別
 
-僅保留以下兩個幣別級別（Share Class）：
+僅保留美金（USD）級別（Share Class）。
 
-- 美金（USD）
-- 新臺幣（TWD）
-
-並排除南非幣、澳幣、歐元、人民幣、日圓等高匯率波動或非主流幣別，聚焦於市場主流儲備與交割幣別，降低匯率雜訊對評分的干擾。
+TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別過濾僅含 USD；並排除南非幣、澳幣、歐元、人民幣、日圓等高匯率波動或非主流幣別，聚焦於市場主流儲備與交割幣別，降低匯率雜訊對評分的干擾。
 
 ### 稅務類別（100% 境外所得）
 
@@ -74,7 +71,7 @@
 | 條件 | 排除內容 |
 | :--- | :--- |
 | 通路 | 非上述三家通路銷售之基金 |
-| 幣別 | 非 USD / TWD 之級別 |
+| 幣別 | 非 USD 之級別 |
 | 註冊地 | 台灣註冊、TW 開頭 ISIN 之基金 |
 | 收入屬性 | 非 100% 境外所得之標的 |
 
@@ -186,10 +183,15 @@
 ## 專案目錄結構（規劃）
 
 ```
-├── .github/workflows/        每日 06:00 排程
-├── config/                   目標基金清單（三通路 / 雙幣別 / 境外所得）
-├── scripts/                  淨值與新聞抓取、AI 分析與報告生成
-├── docs/                     靜態報告頁面（GitHub Pages 發布）
+├── .github/workflows/        每日 06:00 排程（M3）
+├── src/alphafund/            M1 資料管道套件（tdcc / news / filters / pipeline / cli）
+├── scripts/                  執行入口（run_m1.py）
+├── data/
+│   └── history/<日期>/       每日快照（snapshot / nav / news / universe，.json.gz）
+├── docs/
+│   ├── adr/                  重大決策記錄
+│   └── m1-design.md          M1 設計文件
+├── tests/                    單元測試（fixtures）
 ├── README.md                 繁體中文（預設）
 ├── README.en.md              English
 └── LICENSE                   MIT
