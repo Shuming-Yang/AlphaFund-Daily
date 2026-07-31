@@ -12,7 +12,7 @@ from zoneinfo import ZoneInfo
 from .config import CHANNELS, HISTORY_DIR, TIMEZONE, TOP_N_DEEP_ANALYSIS, UNIVERSE_FILE
 from .analyzer import SYSTEM_PROMPT, build_user_prompt, parse_deep_analysis
 from .filters import filter_funds
-from .llm import GeminiClient, QuotaExceeded
+from .llm import LLMClient, QuotaExceeded, get_llm_client
 from .models import DailyAnalysis, DailySnapshot, Fund, FundAnalysis, NewsItem
 from .news import fetch_universe_news
 from .scoring import preliminary_score
@@ -186,7 +186,7 @@ def deep_analyze(
     funds: list[Fund],
     news: list[NewsItem],
     date: str,
-    client: GeminiClient,
+    client: LLMClient,
 ) -> None:
     """對前段基金逐一送 LLM 深度分析；額度用罄即停止並標記其餘。"""
     fund_by_code = {f.fund_code: f for f in funds}
@@ -239,7 +239,7 @@ def run_m2(
 
     deep_analyzed = 0
     if llm and top:
-        client = GeminiClient()
+        client = get_llm_client()
         try:
             deep_analyze(top, snapshot.funds, snapshot.news, date, client)
         finally:

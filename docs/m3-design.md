@@ -29,7 +29,7 @@ M3 將 M2 分析結果落地為可閱讀之每日報告，並以 GitHub Actions 
 ## 3. 每日排程（daily_report.yml）
 
 - **排程**：`cron: '0 22 * * *'`（UTC）= 每日 AM 06:00 台灣時間。
-- **流程**：checkout → `astral-sh/setup-uv` + `uv sync --frozen` → `alphafund daily --top-n 25 --news-limit 200`（`GEMINI_API_KEY` 由 repo secret 傳入）→ commit `data/` + `docs/` → push。
+- **流程**：checkout → `astral-sh/setup-uv` + `uv sync --frozen` → `alphafund daily --top-n 25 --news-limit 200`（`LLM_PROVIDER`（openrouter 預設）+ `OPENROUTER_API_KEY` / `GEMINI_API_KEY` 由 repo secrets 傳入）→ commit `data/` + `docs/` → push。
 - **權限**：`permissions: contents: write`（需 repo Settings → Actions → General → Workflow permissions = Read and write）。
 - **並發**：`concurrency` 群組避免同日重疊執行；`timeout-minutes: 120`。
 - **Key**：secret 未設定時 `GeminiClient` 會明確報錯；本機驗證可 `--no-llm`。
@@ -42,7 +42,7 @@ M3 將 M2 分析結果落地為可閱讀之每日報告，並以 GitHub Actions 
 
 1. **Workflow 權限**：Settings → Actions → General → Workflow permissions → 勾選 **Read and write permissions**。
 2. **GitHub Pages**：Settings → Pages → Source 選 **Deploy from a branch** → branch **master** → 目錄 **/docs**。
-3. **Secret 確認**：Settings → Secrets and variables → Actions → `GEMINI_API_KEY` 已存在。
+3. **Secrets 確認**：Settings → Secrets and variables → Actions → `OPENROUTER_API_KEY`（LLM 主源）與 `GEMINI_API_KEY`（備援）已存在。
 
 ## 6. 驗證結果
 

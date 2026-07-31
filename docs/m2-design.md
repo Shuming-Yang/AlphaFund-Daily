@@ -36,9 +36,12 @@ M1 快照 (universe+nav+news)
 - 初評分僅用於篩選前段基金與提供完整排名；**前段之最終分數以 LLM 深度分析為準**。
 - 期間對應採 TDCC 慣例（navValue5..10 = 1M/3M/6M/1Y/2Y/3Y），待以歷史淨值 API 最終確認。
 
-## 4. Gemini 深度分析（llm.py / analyzer.py）
+## 4. LLM 深度分析（llm.py / analyzer.py）
 
-- 供應商：Gemini API Free Tier（ADR-0002），模型 `gemini-3.6-flash`（可經 `GEMINI_MODEL` 覆寫），temperature 0.2。
+- 供應商切換：`LLM_PROVIDER`（openrouter 預設 | gemini）。
+  - **openrouter**：模型 `google/gemma-4-26b-a4b-it:free`（免費，50 次/日/模型；ADR-0006）。
+  - **gemini**：Gemini API Free Tier（ADR-0002），模型 `gemini-3.6-flash`（可經 `GEMINI_MODEL` 覆寫）。
+- temperature 0.2。
 - 端點：`{GEMINI_API_URL}/{model}:generateContent?key={KEY}`，`responseMimeType=application/json`。
 - **額度降級**：HTTP 429 → `QuotaExceeded` → 停止後續呼叫，未分析基金標記 `quota_skipped`，隔日自動恢復（RPD 每日太平洋午夜重置）。
 - 瞬態錯誤以 tenacity 重試 3 次。
@@ -70,10 +73,12 @@ M1 快照 (universe+nav+news)
 ## 6. 執行方式
 
 ```bash
-GEMINI_API_KEY=... uv run alphafund m2                # 初評分 + 前 25 深度分析
-GEMINI_API_KEY=... uv run alphafund m2 --top-n 3     # 僅前 3 檔（驗證用，省額度）
-uv run alphafund m2 --no-llm                          # 僅初評分
-GEMINI_API_KEY=... uv run alphafund daily --top-n 25  # 完整 M1→M2
+# 預設使用 OpenRouter（gemma-4-26b:free）
+OPENROUTER_API_KEY=... uv run alphafund m2                # 初評分 + 前 N 深度分析
+OPENROUTER_API_KEY=... uv run alphafund m2 --top-n 3     # 僅前 3 檔（驗證用，省額度）
+uv run alphafund m2 --no-llm                              # 僅初評分
+# 改用 Gemini
+LLM_PROVIDER=gemini GEMINI_API_KEY=... uv run alphafund daily --top-n 15
 ```
 
 ## 7. 驗證結果

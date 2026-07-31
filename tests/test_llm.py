@@ -7,7 +7,7 @@ import httpx
 import pytest
 
 from alphafund.analyzer import build_user_prompt, parse_deep_analysis
-from alphafund.llm import GeminiClient, QuotaExceeded
+from alphafund.llm import GeminiClient, OpenRouterClient, QuotaExceeded, _extract_json
 from alphafund.models import Fund, NewsItem
 
 
@@ -15,6 +15,14 @@ def _make_client(handler):
     return GeminiClient(
         api_key="test-key",
         model="gemini-test",
+        transport=httpx.MockTransport(handler),
+    )
+
+
+def _make_or_client(handler):
+    return OpenRouterClient(
+        api_key="or-test",
+        model="google/gemma-test:free",
         transport=httpx.MockTransport(handler),
     )
 
@@ -48,6 +56,58 @@ def test_generate_json_quota_exhausted():
 def test_client_requires_key():
     with pytest.raises(ValueError):
         GeminiClient(api_key="")
+    with pytest.raises(ValueError):
+        OpenRouterClient(api_key="")
+
+
+def test_extract_json_strips_fence():
+    text = '```json\n{"a": 1}\n```'
+    assert _extract_json(text) == {"a": 1}
+
+
+def test_openrouter_generate_json_success():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/api/v1/chat/completions"
+        body = json.loads(request.content)
+        assert body["model"] == "google/gemma-test:free"
+        assert body["response_format"] == {"type": "json_object"}
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": json.dumps({"value_score": 77})}}]},
+        )
+
+    client = _make_or_client(handler)
+    out = client.generate_json("sys", "user")
+    assert out == {"value_score": 77}
+
+
+def test_openrouter_retries_without_format_on_400():
+    """模型不支援 response_format → 400 時去格式重試。"""
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(json.loads(request.content))
+        if len(calls) == 1:
+            return httpx.Response(400, text="response_format not supported")
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '```json\n{"ok": true}\n```'}}]},
+        )
+
+    client = _make_or_client(handler)
+    out = client.generate_json("sys", "user")
+    assert out == {"ok": True}
+    assert len(calls) == 2
+    assert "response_format" not in calls[1]
+
+
+def test_openrouter_quota_exhausted():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429, text="rate limited")
+
+    client = _make_or_client(handler)
+    with pytest.raises(QuotaExceeded):
+        client.generate_json("sys", "user")
 
 
 # --- analyzer ---

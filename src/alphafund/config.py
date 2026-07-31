@@ -78,9 +78,19 @@ GOOGLE_NEWS_LANG = "zh-TW"
 GOOGLE_NEWS_REGION = "TW"
 GOOGLE_NEWS_CEID = "TW:zh-Hant"
 
-# --- M2：Gemini API（Free Tier，ADR-0002）---
+# --- M2：LLM 供應商（ADR-0002 原則：零付費優先）---
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-TOP_N_DEEP_ANALYSIS = 25
+
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_MODEL = os.environ.get(
+    "OPENROUTER_MODEL", "google/gemma-4-26b-a4b-it:free"
+)
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
+
+# llm 供應商切換：openrouter（預設，見 ADR-0006）| gemini
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "openrouter")
+
+TOP_N_DEEP_ANALYSIS = 15  # 免費額度 RPD≈17（gemini-3.6-flash）下的保守名額
 GEMINI_TEMPERATURE = 0.2

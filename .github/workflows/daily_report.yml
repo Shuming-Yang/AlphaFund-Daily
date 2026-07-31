@@ -29,6 +29,9 @@ jobs:
 
       - name: Run daily pipeline (M1 + M2 + report)
         env:
+          # LLM 供應商：openrouter 或 gemini（見 config.LLM_PROVIDER）
+          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'openrouter' }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: uv run alphafund daily --top-n 25 --news-limit 200
 
