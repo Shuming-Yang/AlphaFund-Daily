@@ -163,6 +163,30 @@ def test_fallback_llm_switches_on_429(monkeypatch):
     assert calls["n"] == 2  # 建了兩家
 
 
+def test_fallback_llm_skips_unconfigured_provider(monkeypatch):
+    """未設定 key 的供應商應被跳過，而非中斷切換。"""
+    calls = []
+
+    def fake_build(name):
+        calls.append(name)
+        if name == "no-key":
+            raise ValueError("未設定 xxx API Key")
+        return FakeOk()
+
+    class FakeOk:
+        def generate_json(self, system, user):
+            return {"ok": True}
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("alphafund.llm.build_client", fake_build)
+    fb = FallbackLLM(providers=["no-key", "ok"])
+    out = fb.generate_json("sys", "user")
+    assert out == {"ok": True}
+    assert calls == ["no-key", "ok"]
+
+
 def test_fallback_llm_raises_when_all_exhausted(monkeypatch):
     class FakeQuota:
         def generate_json(self, system, user):

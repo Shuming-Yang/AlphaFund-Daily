@@ -239,7 +239,15 @@ class FallbackLLM:
     def generate_json(self, system_prompt: str, user_prompt: str) -> dict:
         while True:
             if self._client is None:
-                self._client = build_client(self._providers[self._active])
+                try:
+                    self._client = build_client(self._providers[self._active])
+                except ValueError as exc:
+                    # 未設定 key 的供應商 → 跳過
+                    logger.warning("供應商 %s 未設定，跳過（%s）", self._providers[self._active], exc)
+                    self._active += 1
+                    if self._active >= len(self._providers):
+                        raise
+                    continue
             try:
                 return self._client.generate_json(system_prompt, user_prompt)
             except QuotaExceeded:
