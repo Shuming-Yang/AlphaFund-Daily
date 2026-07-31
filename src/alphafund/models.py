@@ -50,3 +50,46 @@ class DailySnapshot(BaseModel):
     universe_count: int = 0
     funds: list[Fund] = Field(default_factory=list)
     news: list[NewsItem] = Field(default_factory=list)
+
+
+class DeepAnalysis(BaseModel):
+    """LLM 深度分析結果（評分矩陣 40/40/20，ADR-0003）。"""
+
+    fund_code: str
+    analysis_date: str = ""
+    news_summary: list[str] = Field(default_factory=list)
+    market_sentiment: str = ""   # Positive / Neutral / Negative
+    value_score: float = 0.0     # 0–100
+    score_rationale: str = ""
+    recommended_strategy: str = ""   # 定期定額 / 分批單筆 / 觀望
+    strategy_explanation: str = ""
+    pros: list[str] = Field(default_factory=list)
+    cons: list[str] = Field(default_factory=list)
+    overall_rating: str = ""     # 強力推薦 / 值得關注 / 中立觀望 / 暫時避開
+
+
+class FundAnalysis(BaseModel):
+    """單一基金的每日分析（初評分 + 可選深度分析）。"""
+
+    fund_code: str
+    name: str
+    currency: str = ""
+    channels: list[str] = Field(default_factory=list)
+    preliminary_score: float = 0.0
+    preliminary_breakdown: dict[str, float] = Field(default_factory=dict)
+    rank: int = 0
+    deep_analysis: DeepAnalysis | None = None
+    status: str = "scored"  # scored / deep_analyzed / quota_skipped / error
+
+
+class DailyAnalysis(BaseModel):
+    """每日分析結果（存於 data/history/<date>/analysis.json.gz）。"""
+
+    date: str
+    generated_at: str = Field(
+        default_factory=lambda: datetime.now().isoformat(timespec="seconds")
+    )
+    top_n: int = 0
+    deep_analyzed_count: int = 0
+    funds: list[FundAnalysis] = Field(default_factory=list)
+

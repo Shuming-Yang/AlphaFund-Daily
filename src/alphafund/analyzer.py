@@ -1,0 +1,108 @@
+"""深度分析：Gemini LLM Prompt 與回應解析。
+
+Prompt 依 Q3/構想文件之「資深境外基金與總體經濟分析師」樣板，
+輸出為 JSON（評分矩陣 40/40/20、購入模式、優劣勢、評級、免責聲明）。
+"""
+from __future__ import annotations
+
+import json
+import logging
+from typing import Any
+
+from .models import DeepAnalysis, Fund, NewsItem
+
+logger = logging.getLogger(__name__)
+
+SYSTEM_PROMPT = """你是資深境外基金與總體經濟分析師。你專業、客觀，擅長整合市場新聞、
+總體經濟趨勢與基金基本面數據，進行精準的基金價值評估與投資策略分析。
+
+規則：
+1. 新聞篩選與摘要：過濾與基金標的/產業/區域無關之雜訊，萃取 2–3 點關鍵動態，
+   並標示整體情緒為 Positive / Neutral / Negative。
+2. 價值評分（0–100，評分矩陣）：
+   - 總體經濟與產業風向 (40%)：相關新聞與近期市場趨勢利多程度。
+   - 績效與風險表現 (40%)：近期淨值走勢與穩定度。
+   - 市場情緒與資金流向 (20%)：新聞與機構聲量傾向。
+3. 購入模式：依波動度與趨勢判斷，選 定期定額 / 分批單筆 / 觀望 之一。
+4. 優劣勢：提供 2 個主要優勢 (pros) 與 2 個潛在風險 (cons)。
+5. 綜合評級：依整體情況選 強力推薦 / 值得關注 / 中立觀望 / 暫時避開 之一。
+6. 嚴格限制：僅能依據提供的 Input Data 分析，不可編造未提及之數據或新聞背景；
+   用語專業、中立、客觀。
+
+請以 JSON 輸出（不要包含任何額外說明文字），結構如下：
+{
+  "news_summary": ["重點1", "重點2", "重點3"],
+  "market_sentiment": "Positive|Neutral|Negative",
+  "value_score": 85,
+  "score_rationale": "評分理由（簡短）",
+  "recommended_strategy": "定期定額|分批單筆|觀望",
+  "strategy_explanation": "策略原因（簡短）",
+  "pros": ["優勢1", "優勢2"],
+  "cons": ["風險1", "風險2"],
+  "overall_rating": "強力推薦|值得關注|中立觀望|暫時避開"
+}
+"""
+
+
+def _format_returns(fund: Fund) -> str:
+    periods = [
+        ("1月", "navValue5"),
+        ("3月", "navValue6"),
+        ("6月", "navValue7"),
+        ("1年", "navValue8"),
+        ("2年", "navValue9"),
+        ("3年", "navValue10"),
+    ]
+    parts = []
+    for label, key in periods:
+        v = fund.returns.get(key) or "-"
+        parts.append(f"{label}={v}%")
+    return "、".join(parts)
+
+
+def build_user_prompt(fund: Fund, news: list[NewsItem], analysis_date: str) -> str:
+    news_lines = "\n".join(f"- [{n.source}] {n.title}（{n.published_at}）" for n in news[:10])
+    if not news_lines:
+        news_lines = "（無近 24 小時相關新聞）"
+    return f"""請分析以下境外基金並輸出 JSON：
+
+## Input Data
+- 基金名稱：{fund.name}
+- 基金代碼：{fund.fund_code}
+- 計價幣別：{fund.currency}
+- 銷售通路：{'、'.join(fund.channels) or '-'}
+- 最新淨值：{fund.nav}（{fund.nav_date}）
+- 期間報酬率：{_format_returns(fund)}
+- 分析日期：{analysis_date}
+
+## 相關新聞
+{news_lines}
+"""
+
+
+def parse_deep_analysis(
+    data: dict[str, Any], fund_code: str, analysis_date: str
+) -> DeepAnalysis:
+    """將 Gemini 回傳之 JSON 轉為 DeepAnalysis（缺欄以安全預設值補）。"""
+    sentiment = str(data.get("market_sentiment") or "Neutral").capitalize()
+    if sentiment not in ("Positive", "Neutral", "Negative"):
+        sentiment = "Neutral"
+    try:
+        value_score = float(data.get("value_score") or 0)
+    except (TypeError, ValueError):
+        value_score = 0.0
+    value_score = max(0.0, min(100.0, value_score))
+
+    return DeepAnalysis(
+        fund_code=fund_code,
+        analysis_date=analysis_date,
+        news_summary=[str(x) for x in data.get("news_summary") or []],
+        market_sentiment=sentiment,
+        value_score=value_score,
+        score_rationale=str(data.get("score_rationale") or ""),
+        recommended_strategy=str(data.get("recommended_strategy") or ""),
+        strategy_explanation=str(data.get("strategy_explanation") or ""),
+        pros=[str(x) for x in data.get("pros") or []],
+        cons=[str(x) for x in data.get("cons") or []],
+        overall_rating=str(data.get("overall_rating") or ""),
+    )

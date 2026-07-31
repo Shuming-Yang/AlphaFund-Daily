@@ -171,12 +171,12 @@ The daily report page includes the following modules:
 
 ## Development Roadmap
 
-| Milestone | Scope | Deliverable |
-| :--- | :--- | :--- |
-| M1 Data Pipeline | Define target fund list (3 channels / USD+TWD / offshore income), NAV & news fetching | Target list and daily raw dataset |
-| M2 AI Analysis Module | Scoring matrix, sentiment classification, buying strategy, pros/cons generation | Structured AI analysis output |
-| M3 Report & Schedule | Static web report generation and daily 06:00 scheduled publishing | Daily report pages |
-| M4 Quality Tuning | Score calibration, cost optimization, anomaly alerts, historical tracking | Stable, running automation |
+| Milestone | Scope | Deliverable | Status |
+| :--- | :--- | :--- | :--- |
+| M1 Data Pipeline | Define target fund list (3 channels / USD / offshore income), NAV & news fetching | Target list and daily raw dataset | Done |
+| M2 AI Analysis Module | Preliminary ranking, Gemini deep analysis (scoring, sentiment, buying strategy, pros/cons) | Structured AI analysis output | Done (LLM run pending API key) |
+| M3 Report & Schedule | Static web report generation and daily 06:00 scheduled publishing | Daily report pages | Pending |
+| M4 Quality Tuning | Score calibration, cost optimization, anomaly alerts, historical tracking | Stable, running automation | Pending |
 
 Detailed planning for each milestone will be expanded later using the "grill-with-docs" skill.
 
@@ -187,10 +187,11 @@ Detailed planning for each milestone will be expanded later using the "grill-wit
 ├── src/alphafund/            M1 data pipeline package (tdcc / news / filters / pipeline / cli)
 ├── scripts/                  Entry points (run_m1.py)
 ├── data/
-│   └── history/<date>/       Daily snapshots (snapshot / nav / news / universe, .json.gz)
+│   └── history/<date>/       Daily snapshots (snapshot / nav / news / universe / analysis, .json.gz)
 ├── docs/
 │   ├── adr/                  Architecture decision records
-│   └── m1-design.md          M1 design document
+│   ├── m1-design.md          M1 design document
+│   └── m2-design.md          M2 design document
 ├── tests/                    Unit tests (fixtures)
 ├── README.md                 Traditional Chinese (default)
 ├── README.en.md              English

@@ -1,0 +1,108 @@
+"""Gemini 客戶端與分析 prompt/解析測試（mock，不觸網）。"""
+from __future__ import annotations
+
+import json
+
+import httpx
+import pytest
+
+from alphafund.analyzer import build_user_prompt, parse_deep_analysis
+from alphafund.llm import GeminiClient, QuotaExceeded
+from alphafund.models import Fund, NewsItem
+
+
+def _make_client(handler):
+    return GeminiClient(
+        api_key="test-key",
+        model="gemini-test",
+        transport=httpx.MockTransport(handler),
+    )
+
+
+# --- GeminiClient ---
+
+def test_generate_json_success():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path.endswith("/models/gemini-test:generateContent")
+        body = json.loads(request.content)
+        assert body["generationConfig"]["responseMimeType"] == "application/json"
+        return httpx.Response(
+            200,
+            json={"candidates": [{"content": {"parts": [{"text": json.dumps({"value_score": 88})}]}}]},
+        )
+
+    client = _make_client(handler)
+    out = client.generate_json("sys", "user")
+    assert out == {"value_score": 88}
+
+
+def test_generate_json_quota_exhausted():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(429, json={"error": {"message": "RESOURCE_EXHAUSTED"}})
+
+    client = _make_client(handler)
+    with pytest.raises(QuotaExceeded):
+        client.generate_json("sys", "user")
+
+
+def test_client_requires_key():
+    with pytest.raises(ValueError):
+        GeminiClient(api_key="")
+
+
+# --- analyzer ---
+
+def test_build_user_prompt_includes_fund_data():
+    f = Fund(
+        fund_code="0352",
+        name="富蘭克林坦伯頓全球投資系列-日本基金美元A (acc)股",
+        currency="USD",
+        channels=["元大證券", "匯豐銀行"],
+        nav="15.64",
+        nav_date="2026/07/30",
+        returns={"navValue5": "1.0", "navValue8": "10.0"},
+    )
+    prompt = build_user_prompt(f, [], "2026-08-01")
+    assert "0352" in prompt
+    assert "15.64" in prompt
+    assert "元大證券" in prompt
+    assert "無近 24 小時相關新聞" in prompt
+
+
+def test_build_user_prompt_includes_news():
+    f = Fund(fund_code="A", name="測試基金", currency="USD")
+    news = [NewsItem(title="測試基金 報酬亮眼", source="鉅亨網", published_at="Fri, 31 Jul 2026 04:27:05 GMT")]
+    prompt = build_user_prompt(f, news, "2026-08-01")
+    assert "鉅亨網" in prompt
+    assert "報酬亮眼" in prompt
+
+
+def test_parse_deep_analysis():
+    raw = {
+        "news_summary": ["重點一"],
+        "market_sentiment": "Positive",
+        "value_score": 85,
+        "score_rationale": "理由",
+        "recommended_strategy": "定期定額",
+        "strategy_explanation": "原因",
+        "pros": ["優勢一"],
+        "cons": ["風險一"],
+        "overall_rating": "值得關注",
+    }
+    da = parse_deep_analysis(raw, "0352", "2026-08-01")
+    assert da.fund_code == "0352"
+    assert da.value_score == 85
+    assert da.market_sentiment == "Positive"
+    assert da.overall_rating == "值得關注"
+    assert da.recommended_strategy == "定期定額"
+
+
+def test_parse_deep_analysis_fallback_and_clamp():
+    da = parse_deep_analysis(
+        {"market_sentiment": "weird", "value_score": "abc", "value_extra": 999},
+        "X",
+        "2026-08-01",
+    )
+    assert da.market_sentiment == "Neutral"
+    assert da.value_score == 0.0
+    assert da.pros == []

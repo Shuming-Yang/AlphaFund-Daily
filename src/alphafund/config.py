@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -76,3 +77,10 @@ GOOGLE_NEWS_BASE = "https://news.google.com/rss/search"
 GOOGLE_NEWS_LANG = "zh-TW"
 GOOGLE_NEWS_REGION = "TW"
 GOOGLE_NEWS_CEID = "TW:zh-Hant"
+
+# --- M2：Gemini API（Free Tier，ADR-0002）---
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.6-flash")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+TOP_N_DEEP_ANALYSIS = 25
+GEMINI_TEMPERATURE = 0.2
