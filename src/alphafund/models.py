@@ -80,6 +80,7 @@ class FundAnalysis(BaseModel):
     rank: int = 0
     deep_analysis: DeepAnalysis | None = None
     status: str = "scored"  # scored / deep_analyzed / quota_skipped / error
+    provider: str = ""      # 深度分析實際使用的 LLM 供應商
 
 
 class DailyAnalysis(BaseModel):

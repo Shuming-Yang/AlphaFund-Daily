@@ -80,6 +80,7 @@ def test_openrouter_generate_json_success():
         body = json.loads(request.content)
         assert body["model"] == "google/gemma-test:free"
         assert body["response_format"] == {"type": "json_object"}
+        assert body["max_tokens"] == 2048
         return httpx.Response(
             200,
             json={"choices": [{"message": {"content": json.dumps({"value_score": 77})}}]},
@@ -88,6 +89,38 @@ def test_openrouter_generate_json_success():
     client = _make_or_client(handler)
     out = client.generate_json("sys", "user")
     assert out == {"value_score": 77}
+
+
+def test_fallback_llm_switches_on_json_decode_error(monkeypatch):
+    """供應商輸出無法解析（截斷）→ 切換下一家。"""
+    import json as _json
+
+    class FakeBroken:
+        def generate_json(self, system, user):
+            raise _json.JSONDecodeError("Unterminated string", "doc", 0)
+
+        def close(self):
+            pass
+
+    class FakeOk:
+        def generate_json(self, system, user):
+            return {"ok": True}
+
+        def close(self):
+            pass
+
+    built = [FakeBroken(), FakeOk()]
+    calls = []
+
+    def fake_build(name):
+        calls.append(name)
+        return built[len(calls) - 1]
+
+    monkeypatch.setattr("alphafund.llm.build_client", fake_build)
+    fb = FallbackLLM(providers=["a", "b"])
+    out = fb.generate_json("sys", "user")
+    assert out == {"ok": True}
+    assert calls == ["a", "b"]
 
 
 def test_openrouter_retries_without_format_on_400():

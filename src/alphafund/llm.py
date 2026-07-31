@@ -90,12 +90,14 @@ class OpenAICompatClient:
         model: str,
         temperature: float = GEMINI_TEMPERATURE,
         timeout: float = 60.0,
+        max_tokens: int = 2048,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         if not api_key:
             raise ValueError(f"未設定 {self.key_env()} API Key")
         self._model = model
         self._temperature = temperature
+        self._max_tokens = max_tokens
         self._headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -112,6 +114,7 @@ class OpenAICompatClient:
             "model": self._model,
             "messages": self._messages,
             "temperature": self._temperature,
+            "max_tokens": self._max_tokens,
         }
         if use_format:
             payload["response_format"] = {"type": "json_object"}
@@ -286,6 +289,9 @@ class FallbackLLM:
             return True
         if isinstance(exc, httpx.HTTPStatusError):
             return exc.response.status_code in (401, 403)
+        if isinstance(exc, json.JSONDecodeError):
+            # 供應商輸出無法解析（如被截斷）→ 試下一家
+            return True
         return False
 
     def generate_json(self, system_prompt: str, user_prompt: str) -> dict:
@@ -302,7 +308,7 @@ class FallbackLLM:
                     continue
             try:
                 return self._client.generate_json(system_prompt, user_prompt)
-            except (QuotaExceeded, httpx.HTTPStatusError) as exc:
+            except (QuotaExceeded, httpx.HTTPStatusError, json.JSONDecodeError) as exc:
                 if not self._should_switch(exc):
                     raise
                 logger.warning(

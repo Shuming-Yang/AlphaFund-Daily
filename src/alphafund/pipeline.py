@@ -201,8 +201,9 @@ def deep_analyze(
             raw = client.generate_json(SYSTEM_PROMPT, user_prompt)
             fa.deep_analysis = parse_deep_analysis(raw, fund.fund_code, date)
             fa.status = "deep_analyzed"
-            logger.info("[%d/%d] %s → %s", idx + 1, len(top), fund.name[:30],
-                        fa.deep_analysis.overall_rating)
+            fa.provider = getattr(client, "provider", "")
+            logger.info("[%d/%d] %s → %s（%s）", idx + 1, len(top), fund.name[:30],
+                        fa.deep_analysis.overall_rating, fa.provider or "-")
         except QuotaExceeded:
             logger.warning("額度用罄，停止後續深度分析（尚餘 %d 檔）", len(top) - idx)
             for rest in top[idx:]:
