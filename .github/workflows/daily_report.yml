@@ -29,10 +29,11 @@ jobs:
 
       - name: Run daily pipeline (M1 + M2 + report)
         env:
-          # LLM 供應商：openrouter 或 gemini（見 config.LLM_PROVIDER）
-          LLM_PROVIDER: ${{ vars.LLM_PROVIDER || 'openrouter' }}
+          # LLM 供應商鏈：依序嘗試，429 自動切下一家（見 config.LLM_PROVIDER_CHAIN）
+          LLM_PROVIDER_CHAIN: ${{ vars.LLM_PROVIDER_CHAIN || 'openrouter,gemini,groq' }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: uv run alphafund daily --top-n 25 --news-limit 200
 
       - name: Commit data, analysis and report

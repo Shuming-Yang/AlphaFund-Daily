@@ -7,7 +7,14 @@ import httpx
 import pytest
 
 from alphafund.analyzer import build_user_prompt, parse_deep_analysis
-from alphafund.llm import GeminiClient, OpenRouterClient, QuotaExceeded, _extract_json
+from alphafund.llm import (
+    FallbackLLM,
+    GeminiClient,
+    GroqClient,
+    OpenRouterClient,
+    QuotaExceeded,
+    _extract_json,
+)
 from alphafund.models import Fund, NewsItem
 
 
@@ -108,6 +115,69 @@ def test_openrouter_quota_exhausted():
     client = _make_or_client(handler)
     with pytest.raises(QuotaExceeded):
         client.generate_json("sys", "user")
+
+
+def test_groq_client_config():
+    client = GroqClient(
+        api_key="groq-test",
+        model="llama-3.3-70b-versatile",
+        transport=httpx.MockTransport(
+            lambda req: httpx.Response(
+                200,
+                json={"choices": [{"message": {"content": '{"ok": 1}'}}]},
+            )
+        ),
+    )
+    assert client.generate_json("s", "u") == {"ok": 1}
+
+
+def test_fallback_llm_switches_on_429(monkeypatch):
+    """第一家 429 → 自動切換第二家。"""
+    calls = {"n": 0}
+
+    class FakeQuota:
+        def generate_json(self, system, user):
+            raise QuotaExceeded("quota")
+
+        def close(self):
+            pass
+
+    class FakeOk:
+        def generate_json(self, system, user):
+            return {"ok": True}
+
+        def close(self):
+            pass
+
+    built = [FakeQuota(), FakeOk()]
+
+    def fake_build(name):
+        c = built[calls["n"]]
+        calls["n"] += 1
+        return c
+
+    monkeypatch.setattr("alphafund.llm.build_client", fake_build)
+    fb = FallbackLLM(providers=["a", "b"])
+    out = fb.generate_json("sys", "user")
+    assert out == {"ok": True}
+    assert calls["n"] == 2  # 建了兩家
+
+
+def test_fallback_llm_raises_when_all_exhausted(monkeypatch):
+    class FakeQuota:
+        def generate_json(self, system, user):
+            raise QuotaExceeded("quota")
+
+        def close(self):
+            pass
+
+    def fake_build(name):
+        return FakeQuota()
+
+    monkeypatch.setattr("alphafund.llm.build_client", fake_build)
+    fb = FallbackLLM(providers=["a", "b"])
+    with pytest.raises(QuotaExceeded):
+        fb.generate_json("sys", "user")
 
 
 # --- analyzer ---

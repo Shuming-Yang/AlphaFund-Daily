@@ -38,9 +38,10 @@ M1 快照 (universe+nav+news)
 
 ## 4. LLM 深度分析（llm.py / analyzer.py）
 
-- 供應商切換：`LLM_PROVIDER`（openrouter 預設 | gemini）。
-  - **openrouter**：模型 `google/gemma-4-26b-a4b-it:free`（免費，50 次/日/模型；ADR-0006）。
-  - **gemini**：Gemini API Free Tier（ADR-0002），模型 `gemini-3.6-flash`（可經 `GEMINI_MODEL` 覆寫）。
+- 供應商鏈（ADR-0007）：`LLM_PROVIDER_CHAIN` 依序嘗試，429 自動切換下一家。
+  - **openrouter**：`google/gemma-4-26b-a4b-it:free`（免費，50 次/日/模型）。
+  - **gemini**：`gemini-3.6-flash` Free Tier（RPD≈17/日）。
+  - **groq**：`llama-3.3-70b-versatile`（免費，~14,400 次/日）。
 - temperature 0.2。
 - 端點：`{GEMINI_API_URL}/{model}:generateContent?key={KEY}`，`responseMimeType=application/json`。
 - **額度降級**：HTTP 429 → `QuotaExceeded` → 停止後續呼叫，未分析基金標記 `quota_skipped`，隔日自動恢復（RPD 每日太平洋午夜重置）。

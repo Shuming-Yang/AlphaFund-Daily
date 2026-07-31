@@ -89,8 +89,21 @@ OPENROUTER_MODEL = os.environ.get(
 )
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 
-# llm 供應商切換：openrouter（預設，見 ADR-0006）| gemini
-LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "openrouter")
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+
+# LLM 供應商鏈：依序嘗試，某家 429 自動切換下一家（ADR-0007）
+_chain_env = os.environ.get("LLM_PROVIDER_CHAIN", "").strip()
+if _chain_env:
+    LLM_PROVIDER_CHAIN = [p.strip() for p in _chain_env.split(",") if p.strip()]
+elif os.environ.get("LLM_PROVIDER", "").strip():
+    LLM_PROVIDER_CHAIN = [os.environ["LLM_PROVIDER"].strip()]
+else:
+    LLM_PROVIDER_CHAIN = ["openrouter", "gemini", "groq"]
+
+# 保留 LLM_PROVIDER 相容（= 鏈之首）
+LLM_PROVIDER = LLM_PROVIDER_CHAIN[0]
 
 TOP_N_DEEP_ANALYSIS = 15  # 免費額度 RPD≈17（gemini-3.6-flash）下的保守名額
 GEMINI_TEMPERATURE = 0.2

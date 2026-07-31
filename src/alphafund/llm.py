@@ -1,8 +1,9 @@
-"""LLM 客戶端抽象：支援 Gemini API 與 OpenRouter 兩供應商。
+"""LLM 客戶端抽象與供應商鏈。
 
-供應商切換：`LLM_PROVIDER`（gemini 預設 | openrouter）。
-兩者皆提供 `generate_json(system_prompt, user_prompt) -> dict` 介面；
-429（額度/速率限制）→ `QuotaExceeded`，由 pipeline 優雅降級。
+- `GeminiClient` / `OpenRouterClient` / `GroqClient`：各供應商實作，皆提供
+  `generate_json(system_prompt, user_prompt) -> dict` 介面。
+- `FallbackLLM`：依 `LLM_PROVIDER_CHAIN` 依序嘗試；某家 429（額度/速率限制）
+  自動切換下一家，全數用罄才拋 `QuotaExceeded`（ADR-0007）。
 """
 from __future__ import annotations
 
@@ -18,7 +19,10 @@ from .config import (
     GEMINI_API_URL,
     GEMINI_MODEL,
     GEMINI_TEMPERATURE,
-    LLM_PROVIDER,
+    GROQ_API_KEY,
+    GROQ_API_URL,
+    GROQ_MODEL,
+    LLM_PROVIDER_CHAIN,
     OPENROUTER_API_KEY,
     OPENROUTER_API_URL,
     OPENROUTER_MODEL,
@@ -26,7 +30,17 @@ from .config import (
 
 logger = logging.getLogger(__name__)
 
-_RETRYABLE = (httpx.TransportError, httpx.TimeoutException)
+
+class QuotaExceeded(RuntimeError):
+    """LLM API 額度/速率限制用罄（429）。"""
+
+
+class LLMClient(Protocol):
+    """LLM 供應商統一介面。"""
+
+    def generate_json(self, system_prompt: str, user_prompt: str) -> dict: ...
+
+    def close(self) -> None: ...
 
 
 def _retry_predicate(exc: BaseException) -> bool:
@@ -46,18 +60,6 @@ _RETRY_ARGS = {
 }
 
 
-class QuotaExceeded(RuntimeError):
-    """LLM API 額度/速率限制用罄（429）。"""
-
-
-class LLMClient(Protocol):
-    """LLM 供應商統一介面。"""
-
-    def generate_json(self, system_prompt: str, user_prompt: str) -> dict: ...
-
-    def close(self) -> None: ...
-
-
 def _extract_json(text: str) -> dict:
     """自回應文字解析 JSON（容忍 markdown code fence）。"""
     t = text.strip()
@@ -69,6 +71,99 @@ def _extract_json(text: str) -> dict:
             lines = lines[:-1]
         t = "\n".join(lines).strip()
     return json.loads(t)
+
+
+class OpenAICompatClient:
+    """OpenAI-compatible chat completions 基底（OpenRouter / Groq）。"""
+
+    def __init__(
+        self,
+        api_key: str,
+        url: str,
+        model: str,
+        temperature: float = GEMINI_TEMPERATURE,
+        timeout: float = 60.0,
+        transport: httpx.BaseTransport | None = None,
+    ) -> None:
+        if not api_key:
+            raise ValueError(f"未設定 {self.key_env()} API Key")
+        self._model = model
+        self._temperature = temperature
+        self._headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+        self._url = url
+        self._client = httpx.Client(timeout=timeout, transport=transport)
+        self._messages: list[dict[str, str]] = []
+
+    def key_env(self) -> str:
+        return "OPENROUTER_API_KEY"  # 子類別覆寫
+
+    def _payload(self, use_format: bool) -> dict:
+        payload: dict = {
+            "model": self._model,
+            "messages": self._messages,
+            "temperature": self._temperature,
+        }
+        if use_format:
+            payload["response_format"] = {"type": "json_object"}
+        return payload
+
+    @retry(**_RETRY_ARGS)
+    def generate_json(self, system_prompt: str, user_prompt: str) -> dict:
+        self._messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        resp = self._client.post(
+            self._url, headers=self._headers, json=self._payload(use_format=True)
+        )
+        # 部分模型不支援 response_format（400）→ 去格式重試一次
+        if resp.status_code == 400 and "response_format" in resp.text.lower():
+            logger.warning("模型不支援 JSON mode，改用無格式重試")
+            resp = self._client.post(
+                self._url, headers=self._headers, json=self._payload(use_format=False)
+            )
+        if resp.status_code == 429:
+            logger.warning("%s 額度/速率限制（429）：%s", self.__class__.__name__, resp.text[:200])
+            raise QuotaExceeded(f"{self.__class__.__name__} 額度已用罄（429）")
+        resp.raise_for_status()
+        data = resp.json()
+        try:
+            text = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError) as exc:
+            raise RuntimeError(f"{self.__class__.__name__} 回應格式異常: {data}") from exc
+        return _extract_json(text)
+
+    def close(self) -> None:
+        self._client.close()
+
+
+class OpenRouterClient(OpenAICompatClient):
+    """OpenRouter（單一 API 接多模型；免費與付費）。"""
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("api_key", OPENROUTER_API_KEY)
+        kwargs.setdefault("url", OPENROUTER_API_URL)
+        kwargs.setdefault("model", OPENROUTER_MODEL)
+        super().__init__(**kwargs)
+
+    def key_env(self) -> str:
+        return "OPENROUTER_API_KEY"
+
+
+class GroqClient(OpenAICompatClient):
+    """Groq（免費 tier，llama-3.3-70b）。"""
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("api_key", GROQ_API_KEY)
+        kwargs.setdefault("url", GROQ_API_URL)
+        kwargs.setdefault("model", GROQ_MODEL)
+        super().__init__(**kwargs)
+
+    def key_env(self) -> str:
+        return "GROQ_API_KEY"
 
 
 class GeminiClient:
@@ -120,76 +215,54 @@ class GeminiClient:
         self._client.close()
 
 
-class OpenRouterClient:
-    """OpenRouter（單一 API 接多模型；支援免費與付費模型）。"""
+def build_client(provider: str) -> LLMClient:
+    """依供應商名稱建立客戶端。"""
+    if provider == "gemini":
+        return GeminiClient()
+    if provider == "groq":
+        return GroqClient()
+    if provider == "openrouter":
+        return OpenRouterClient()
+    raise ValueError(f"未知 LLM 供應商: {provider}")
 
-    def __init__(
-        self,
-        api_key: str = OPENROUTER_API_KEY,
-        model: str = OPENROUTER_MODEL,
-        temperature: float = GEMINI_TEMPERATURE,
-        timeout: float = 60.0,
-        transport: httpx.BaseTransport | None = None,
-    ) -> None:
-        if not api_key:
-            raise ValueError(
-                "未設定 OPENROUTER_API_KEY：請至 https://openrouter.ai/keys 建立 "
-                "並設為環境變數 OPENROUTER_API_KEY"
-            )
-        self._model = model
-        self._temperature = temperature
-        self._headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
-        self._client = httpx.Client(timeout=timeout, transport=transport)
 
-    def _request(self, model: str | None, use_format: bool) -> dict:
-        payload: dict = {
-            "model": model or self._model,
-            "messages": self._messages,
-            "temperature": self._temperature,
-        }
-        if use_format:
-            payload["response_format"] = {"type": "json_object"}
-        return payload
+class FallbackLLM:
+    """供應商鏈：429 時自動切換下一家（ADR-0007）。"""
 
-    @retry(**_RETRY_ARGS)
+    def __init__(self, providers: list[str] | None = None) -> None:
+        self._providers = providers or list(LLM_PROVIDER_CHAIN)
+        if not self._providers:
+            raise ValueError("LLM_PROVIDER_CHAIN 為空")
+        self._active = 0
+        self._client: LLMClient | None = None
+
     def generate_json(self, system_prompt: str, user_prompt: str) -> dict:
-        self._messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
-        resp = self._client.post(
-            OPENROUTER_API_URL,
-            headers=self._headers,
-            json=self._request(None, use_format=True),
-        )
-        # 部分模型不支援 response_format（400）→ 去格式重試一次
-        if resp.status_code == 400 and "response_format" in resp.text.lower():
-            logger.warning("模型不支援 JSON mode，改用無格式重試")
-            resp = self._client.post(
-                OPENROUTER_API_URL,
-                headers=self._headers,
-                json=self._request(None, use_format=False),
-            )
-        if resp.status_code == 429:
-            logger.warning("OpenRouter 額度/速率限制（429）：%s", resp.text[:200])
-            raise QuotaExceeded("OpenRouter 額度已用罄（429）")
-        resp.raise_for_status()
-        data = resp.json()
-        try:
-            text = data["choices"][0]["message"]["content"]
-        except (KeyError, IndexError) as exc:
-            raise RuntimeError(f"OpenRouter 回應格式異常: {data}") from exc
-        return _extract_json(text)
+        while True:
+            if self._client is None:
+                self._client = build_client(self._providers[self._active])
+            try:
+                return self._client.generate_json(system_prompt, user_prompt)
+            except QuotaExceeded:
+                logger.warning(
+                    "供應商 %s 額度用罄 → 切換備援", self._providers[self._active]
+                )
+                self._client.close()
+                self._client = None
+                self._active += 1
+                if self._active >= len(self._providers):
+                    raise
+                continue
 
     def close(self) -> None:
-        self._client.close()
+        if self._client is not None:
+            self._client.close()
+            self._client = None
+
+    @property
+    def provider(self) -> str:
+        return self._providers[self._active]
 
 
-def get_llm_client() -> LLMClient:
-    """依 LLM_PROVIDER 建立對應客戶端。"""
-    if LLM_PROVIDER == "openrouter":
-        return OpenRouterClient()
-    return GeminiClient()
+def get_llm_client() -> FallbackLLM:
+    """建立供應商鏈客戶端（依 LLM_PROVIDER_CHAIN）。"""
+    return FallbackLLM()
