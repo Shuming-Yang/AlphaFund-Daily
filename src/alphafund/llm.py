@@ -15,6 +15,10 @@ import httpx
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_fixed
 
 from .config import (
+    CLOUDFLARE_ACCOUNT_ID,
+    CLOUDFLARE_API_TOKEN,
+    CLOUDFLARE_API_URL,
+    CLOUDFLARE_MODEL,
     GEMINI_API_KEY,
     GEMINI_API_URL,
     GEMINI_MODEL,
@@ -166,6 +170,27 @@ class GroqClient(OpenAICompatClient):
         return "GROQ_API_KEY"
 
 
+class CloudflareClient(OpenAICompatClient):
+    """Cloudflare Workers AI（免費 tier，10,000 neurons/日）。
+
+    OpenAI 相容端點：/accounts/{account_id}/ai/v1/chat/completions。
+    """
+
+    def __init__(self, **kwargs):
+        account_id = kwargs.pop("account_id", None) or CLOUDFLARE_ACCOUNT_ID
+        if not account_id:
+            raise ValueError("未設定 CLOUDFLARE_ACCOUNT_ID（Cloudflare 帳號 ID）")
+        kwargs.setdefault("api_key", CLOUDFLARE_API_TOKEN)
+        kwargs.setdefault(
+            "url", f"{CLOUDFLARE_API_URL}/accounts/{account_id}/ai/v1/chat/completions"
+        )
+        kwargs.setdefault("model", CLOUDFLARE_MODEL)
+        super().__init__(**kwargs)
+
+    def key_env(self) -> str:
+        return "CLOUDFLARE_API_TOKEN"
+
+
 class GeminiClient:
     """Gemini API（Free Tier）。"""
 
@@ -221,13 +246,15 @@ def build_client(provider: str) -> LLMClient:
         return GeminiClient()
     if provider == "groq":
         return GroqClient()
+    if provider == "cloudflare":
+        return CloudflareClient()
     if provider == "openrouter":
         return OpenRouterClient()
     raise ValueError(f"未知 LLM 供應商: {provider}")
 
 
 class FallbackLLM:
-    """供應商鏈：429 時自動切換下一家（ADR-0007）。"""
+    """供應商鏈：429（額度）或 401/403（無效/未授權 key）時自動切換下一家（ADR-0007）。"""
 
     def __init__(self, providers: list[str] | None = None) -> None:
         self._providers = providers or list(LLM_PROVIDER_CHAIN)
@@ -235,6 +262,13 @@ class FallbackLLM:
             raise ValueError("LLM_PROVIDER_CHAIN 為空")
         self._active = 0
         self._client: LLMClient | None = None
+
+    def _should_switch(self, exc: BaseException) -> bool:
+        if isinstance(exc, QuotaExceeded):
+            return True
+        if isinstance(exc, httpx.HTTPStatusError):
+            return exc.response.status_code in (401, 403)
+        return False
 
     def generate_json(self, system_prompt: str, user_prompt: str) -> dict:
         while True:
@@ -250,9 +284,13 @@ class FallbackLLM:
                     continue
             try:
                 return self._client.generate_json(system_prompt, user_prompt)
-            except QuotaExceeded:
+            except (QuotaExceeded, httpx.HTTPStatusError) as exc:
+                if not self._should_switch(exc):
+                    raise
                 logger.warning(
-                    "供應商 %s 額度用罄 → 切換備援", self._providers[self._active]
+                    "供應商 %s 不可用（%s）→ 切換備援",
+                    self._providers[self._active],
+                    getattr(exc, "response", exc),
                 )
                 self._client.close()
                 self._client = None

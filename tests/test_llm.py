@@ -8,6 +8,7 @@ import pytest
 
 from alphafund.analyzer import build_user_prompt, parse_deep_analysis
 from alphafund.llm import (
+    CloudflareClient,
     FallbackLLM,
     GeminiClient,
     GroqClient,
@@ -131,6 +132,31 @@ def test_groq_client_config():
     assert client.generate_json("s", "u") == {"ok": 1}
 
 
+def test_cloudflare_client_config_and_url():
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        return httpx.Response(
+            200,
+            json={"choices": [{"message": {"content": '{"ok": 1}'}}]},
+        )
+
+    client = CloudflareClient(
+        account_id="acc123",
+        api_key="cf-token",
+        model="@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+        transport=httpx.MockTransport(handler),
+    )
+    assert client.generate_json("s", "u") == {"ok": 1}
+    assert "/accounts/acc123/ai/v1/chat/completions" in captured["url"]
+
+
+def test_cloudflare_client_requires_account_id():
+    with pytest.raises(ValueError):
+        CloudflareClient(account_id="", api_key="x")
+
+
 def test_fallback_llm_switches_on_429(monkeypatch):
     """第一家 429 → 自動切換第二家。"""
     calls = {"n": 0}
@@ -161,6 +187,41 @@ def test_fallback_llm_switches_on_429(monkeypatch):
     out = fb.generate_json("sys", "user")
     assert out == {"ok": True}
     assert calls["n"] == 2  # 建了兩家
+
+
+def test_fallback_llm_switches_on_401(monkeypatch):
+    """401（無效/未授權 key）也應切換下一家。"""
+    import httpx as _h
+
+    class Fake401:
+        def generate_json(self, system, user):
+            raise _h.HTTPStatusError(
+                "401",
+                request=_h.Request("POST", "http://x"),
+                response=_h.Response(401),
+            )
+
+        def close(self):
+            pass
+
+    class FakeOk:
+        def generate_json(self, system, user):
+            return {"ok": True}
+
+        def close(self):
+            pass
+
+    calls = []
+
+    def fake_build(name):
+        calls.append(name)
+        return Fake401() if name == "bad" else FakeOk()
+
+    monkeypatch.setattr("alphafund.llm.build_client", fake_build)
+    fb = FallbackLLM(providers=["bad", "ok"])
+    out = fb.generate_json("sys", "user")
+    assert out == {"ok": True}
+    assert calls == ["bad", "ok"]
 
 
 def test_fallback_llm_skips_unconfigured_provider(monkeypatch):

@@ -93,14 +93,21 @@ GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.3-70b-versatile")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
-# LLM 供應商鏈：依序嘗試，某家 429 自動切換下一家（ADR-0007）
+CLOUDFLARE_API_URL = "https://api.cloudflare.com/client/v4"
+CLOUDFLARE_MODEL = os.environ.get(
+    "CLOUDFLARE_MODEL", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"
+)
+CLOUDFLARE_API_TOKEN = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+CLOUDFLARE_ACCOUNT_ID = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "")
+
+# LLM 供應商鏈：依序嘗試，某家 429/401/403 自動切換下一家（ADR-0007）
 _chain_env = os.environ.get("LLM_PROVIDER_CHAIN", "").strip()
 if _chain_env:
     LLM_PROVIDER_CHAIN = [p.strip() for p in _chain_env.split(",") if p.strip()]
 elif os.environ.get("LLM_PROVIDER", "").strip():
     LLM_PROVIDER_CHAIN = [os.environ["LLM_PROVIDER"].strip()]
 else:
-    LLM_PROVIDER_CHAIN = ["openrouter", "gemini", "groq"]
+    LLM_PROVIDER_CHAIN = ["openrouter", "gemini", "groq", "cloudflare"]
 
 # 保留 LLM_PROVIDER 相容（= 鏈之首）
 LLM_PROVIDER = LLM_PROVIDER_CHAIN[0]
