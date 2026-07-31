@@ -1,0 +1,41 @@
+name: Daily Report
+
+on:
+  schedule:
+    # 每天 AM 06:00（台灣時間）= UTC 22:00（GitHub Actions 使用 UTC）
+    - cron: '0 22 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
+
+jobs:
+  build-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run daily pipeline (M1 + M2 + report)
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: uv run alphafund daily --top-n 25 --news-limit 200
+
+      - name: Commit data, analysis and report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/ docs/
+          git commit -m "daily: $(TZ=Asia/Taipei date +%Y-%m-%d) 每日報告" || echo "無變更，略過 commit"
+          git push

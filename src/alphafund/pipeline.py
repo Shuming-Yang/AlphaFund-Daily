@@ -25,6 +25,12 @@ def today_str() -> str:
     return datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d")
 
 
+def latest_date() -> str:
+    """回傳 data/history/ 中最新日期（YYYY-MM-DD）。"""
+    dates = [d.name for d in HISTORY_DIR.glob("????-??-??") if d.is_dir()]
+    return max(dates) if dates else today_str()
+
+
 def build_universe(client: TdccClient) -> list[Fund]:
     """三通路上架基金 ∩ 允許幣別 → 目標基金清單。"""
     channel_sets: dict[str, set[str]] = {}
@@ -80,14 +86,26 @@ def run_m1(
     news_limit: int | None = None,
     save: bool = True,
 ) -> DailySnapshot:
-    """執行完整 M1 管線並回傳快照。"""
+    """執行完整 M1 管線並回傳快照。
+
+    news_limit 指定時，新聞目標為「動能排序前 N 檔」而非清單前 N 檔，
+    確保兩階段（ADR-0003）前段基金有新（涵蓋深度分析對象）。
+    """
     date = date or today_str()
     funds: list[Fund] = []
     news: list[NewsItem] = []
     with TdccClient() as client:
         funds = build_universe(client)
     if news_limit is None or news_limit > 0:
-        news = fetch_universe_news(funds, limit=news_limit)
+        targets = funds
+        if news_limit is not None:
+            from .scoring import momentum
+            targets = sorted(
+                funds,
+                key=lambda f: -(momentum(f)[0] or 0.0),
+            )[:news_limit]
+            logger.info("新聞目標：動能前 %d 檔", len(targets))
+        news = fetch_universe_news(targets)
         logger.info("新聞項目: %d", len(news))
     else:
         logger.info("略過新聞抓取")

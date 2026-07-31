@@ -28,11 +28,15 @@ def _build_parser() -> argparse.ArgumentParser:
     m2.add_argument("--no-llm", action="store_true", help="僅初評分，不呼叫 LLM")
     m2.add_argument("--no-save", action="store_true", help="不寫入檔案")
 
-    daily = sub.add_parser("daily", help="完整每日管線（M1 → M2）")
+    daily = sub.add_parser("daily", help="完整每日管線（M1 → M2 → 報告）")
     daily.add_argument("--date", help="日期 YYYY-MM-DD（預設今天）")
     daily.add_argument("--news-limit", type=int, default=None)
     daily.add_argument("--top-n", type=int, default=None)
     daily.add_argument("--no-llm", action="store_true")
+
+    report = sub.add_parser("report", help="由當日分析結果生成 HTML5 報告頁面 docs/index.html")
+    report.add_argument("--date", help="報告日期 YYYY-MM-DD（預設最新快照日期）")
+    report.add_argument("--out", default=None, help="輸出檔路徑（預設 docs/index.html）")
 
     uni = sub.add_parser("universe", help="僅重建目標基金清單並寫入 data/universe.json")
     uni.add_argument("--no-save", action="store_true", help="不寫入檔案")
@@ -67,8 +71,17 @@ def main(argv: list[str] | None = None) -> int:
                 top_n=args.top_n or 25,
                 llm=not args.no_llm,
             )
+            from .report import generate_report
+            out = generate_report(snap.date)
             print(f"每日 {snap.date}: 基金 {snap.universe_count} 檔, 新聞 {len(snap.news)} 筆, "
-                  f"深度分析 {analysis.deep_analyzed_count} 檔")
+                  f"深度分析 {analysis.deep_analyzed_count} 檔, 報告 {out}")
+        elif args.cmd == "report":
+            from pathlib import Path
+            from .pipeline import latest_date
+            from .report import generate_report
+            date = args.date or latest_date()
+            out = generate_report(date, Path(args.out) if args.out else None)
+            print(f"報告已生成: {out}")
         elif args.cmd == "universe":
             from .pipeline import build_universe
             from .tdcc import TdccClient
