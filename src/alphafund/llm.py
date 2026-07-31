@@ -11,7 +11,7 @@ import logging
 from typing import Protocol
 
 import httpx
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+from tenacity import retry, retry_if_exception, stop_after_attempt, wait_fixed
 
 from .config import (
     GEMINI_API_KEY,
@@ -27,6 +27,23 @@ from .config import (
 logger = logging.getLogger(__name__)
 
 _RETRYABLE = (httpx.TransportError, httpx.TimeoutException)
+
+
+def _retry_predicate(exc: BaseException) -> bool:
+    """傳輸/逾時錯誤，或 HTTP 5xx（瞬態伺服器錯誤）才重試。"""
+    if isinstance(exc, (httpx.TransportError, httpx.TimeoutException)):
+        return True
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code >= 500
+    return False
+
+
+_RETRY_ARGS = {
+    "retry": retry_if_exception(_retry_predicate),
+    "stop": stop_after_attempt(3),
+    "wait": wait_fixed(2),
+    "reraise": True,
+}
 
 
 class QuotaExceeded(RuntimeError):
@@ -75,12 +92,7 @@ class GeminiClient:
         self._client = httpx.Client(timeout=timeout, transport=transport)
         self._url = f"{GEMINI_API_URL}/{model}:generateContent"
 
-    @retry(
-        retry=retry_if_exception_type(_RETRYABLE),
-        stop=stop_after_attempt(3),
-        wait=wait_fixed(2),
-        reraise=True,
-    )
+    @retry(**_RETRY_ARGS)
     def generate_json(self, system_prompt: str, user_prompt: str) -> dict:
         payload = {
             "systemInstruction": {"parts": [{"text": system_prompt}]},
@@ -142,12 +154,7 @@ class OpenRouterClient:
             payload["response_format"] = {"type": "json_object"}
         return payload
 
-    @retry(
-        retry=retry_if_exception_type(_RETRYABLE),
-        stop=stop_after_attempt(3),
-        wait=wait_fixed(2),
-        reraise=True,
-    )
+    @retry(**_RETRY_ARGS)
     def generate_json(self, system_prompt: str, user_prompt: str) -> dict:
         self._messages = [
             {"role": "system", "content": system_prompt},

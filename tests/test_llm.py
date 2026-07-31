@@ -166,3 +166,10 @@ def test_parse_deep_analysis_fallback_and_clamp():
     assert da.market_sentiment == "Neutral"
     assert da.value_score == 0.0
     assert da.pros == []
+
+
+def test_parse_deep_analysis_handles_non_dict():
+    da = parse_deep_analysis(["not", "a", "dict"], "X", "2026-08-01")
+    assert da.fund_code == "X"
+    assert "格式異常" in da.score_rationale
+    assert da.value_score == 0.0

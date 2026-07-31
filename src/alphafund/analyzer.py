@@ -81,9 +81,16 @@ def build_user_prompt(fund: Fund, news: list[NewsItem], analysis_date: str) -> s
 
 
 def parse_deep_analysis(
-    data: dict[str, Any], fund_code: str, analysis_date: str
+    data: Any, fund_code: str, analysis_date: str
 ) -> DeepAnalysis:
-    """將 Gemini 回傳之 JSON 轉為 DeepAnalysis（缺欄以安全預設值補）。"""
+    """將 LLM 回傳之 JSON 轉為 DeepAnalysis（缺欄以安全預設值補）。"""
+    if not isinstance(data, dict):
+        logger.warning("深度分析回應非物件（%s）：%r", fund_code, type(data).__name__)
+        return DeepAnalysis(
+            fund_code=fund_code,
+            analysis_date=analysis_date,
+            score_rationale="（LLM 回應格式異常，無法解析）",
+        )
     sentiment = str(data.get("market_sentiment") or "Neutral").capitalize()
     if sentiment not in ("Positive", "Neutral", "Negative"):
         sentiment = "Neutral"
