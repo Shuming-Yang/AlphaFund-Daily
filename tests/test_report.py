@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from alphafund.report import _navbar_html, render_calendar, render_report
+from alphafund.trends import TrendPoint
 
 
 def _sample_data():
@@ -137,3 +138,73 @@ def test_render_report_injects_calendar_and_nav():
 def test_render_report_has_proportional_width():
     html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
     assert "width:min(96%,1280px)" in html
+
+
+def _sample_series() -> dict[str, list[TrendPoint]]:
+    return {
+        "0352": [
+            TrendPoint(date="2026-07-31", preliminary_score=90.0, rank=1,
+                       value_score=85.0, overall_rating="值得關注"),
+            TrendPoint(date="2026-08-01", preliminary_score=93.9, rank=1,
+                       value_score=85.0, overall_rating="值得關注"),
+        ]
+    }
+
+
+def test_render_report_injects_trend_block():
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01", series=_sample_series()
+    )
+    assert "📈 近期趨勢" in html
+    assert '<svg class="spark"' in html
+    assert "初評分 近 2 日" in html
+    assert "排名（倒序" in html
+
+
+def test_render_report_trend_insufficient_note():
+    series = {
+        "0352": [TrendPoint(date="2026-08-01", preliminary_score=90.0, rank=1)]
+    }
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01", series=series
+    )
+    assert "歷史資料累積中" in html
+    assert '<svg class="spark"' not in html
+
+
+def test_render_report_comparison_section():
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01", series=_sample_series()
+    )
+    assert "📊 趨勢比較" in html
+    assert "初評分並排表" in html
+    assert "近窗變化" in html
+
+
+def test_render_report_comparison_insufficient_note():
+    series = {
+        "0352": [TrendPoint(date="2026-08-01", preliminary_score=90.0, rank=1)]
+    }
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01", series=series
+    )
+    assert "歷史資料累積中：需 ≥2 個交易日" in html
+    assert "近窗變化" not in html
+
+
+def test_render_report_compact_skips_trends():
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01",
+        compact=True, series=_sample_series(),
+    )
+    assert "📈 近期趨勢" not in html
+    assert "📊 趨勢比較" not in html
+    assert '<svg class="spark"' not in html
+
+
+def test_navbar_has_trends_link():
+    latest = _navbar_html(is_latest=True, date="2026-08-01")
+    assert 'href="trends.html"' in latest
+    assert "📈 趨勢" in latest
+    archive = _navbar_html(is_latest=False, date="2026-08-01")
+    assert 'href="../trends.html"' in archive

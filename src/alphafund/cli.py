@@ -38,7 +38,9 @@ def _build_parser() -> argparse.ArgumentParser:
     report.add_argument("--date", help="報告日期 YYYY-MM-DD（預設最新快照日期）")
     report.add_argument("--out", default=None, help="輸出檔路徑（預設 docs/index.html）")
 
-    archive = sub.add_parser("archive", help="重產全部歷史 archive 頁 + 首頁（最新報告 + 日曆）")
+    archive = sub.add_parser("archive", help="重產全部歷史 archive 頁 + 首頁（最新報告 + 日曆）+ 趨勢頁")
+
+    trends = sub.add_parser("trends", help="生成趨勢比較頁 docs/trends.html")
 
     uni = sub.add_parser("universe", help="僅重建目標基金清單並寫入 data/universe.json")
     uni.add_argument("--no-save", action="store_true", help="不寫入檔案")
@@ -80,7 +82,11 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "archive":
             from .report import generate_archive
             index, pages = generate_archive()
-            print(f"archive 已生成: 首頁 {index} + {len(pages)} 頁歷史報告")
+            print(f"archive 已生成: 首頁 {index} + {len(pages)} 頁歷史報告 + 趨勢頁")
+        elif args.cmd == "trends":
+            from .report import generate_trends
+            path = generate_trends()
+            print(f"趨勢頁已生成: {path}")
         elif args.cmd == "report":
             from pathlib import Path
             from .pipeline import latest_date

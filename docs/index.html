@@ -68,15 +68,35 @@ font-size:12px;color:var(--mut)}
 .cal-grid .day a{display:block;color:var(--brand);text-decoration:none;font-weight:600;border-radius:6px}
 .cal-grid .day a:hover{background:#e5f1f8}
 .cal-grid .day.today a{outline:1px solid var(--brand)}
+.spark{display:block;margin:2px 0;max-width:100%}
+.trend-blk h4{margin:6px 0 2px;font-size:12px;color:var(--mut)}
+.trend-metric{font-size:11px;color:var(--mut);display:block;margin-top:4px}
+.trend-note{font-size:12px;color:var(--mut)}
+.trend-stats{font-size:11px;color:var(--mut);margin-top:4px}
+table.mini{margin-top:6px;border:1px solid var(--line);border-radius:6px}
+table.mini th,table.mini td{padding:2px 8px;font-size:11px;text-align:right}
+table.mini th:first-child,table.mini td:first-child{text-align:left}
+.cmp-scroll{overflow-x:auto;border-radius:8px}
+table.cmp th,table.cmp td{white-space:nowrap}
+td.cmp-rank,th.cmp-rank{text-align:center}
+td.cmp-miss{color:#b0b6bd;text-align:center}
+.cmp-foot{font-size:11px;color:var(--mut);margin-top:4px}
+.trend-hero{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0}
+.trend-hero h3{margin:0 0 2px;font-size:15px}
+.trend-hero .sub{font-size:12px;color:var(--mut)}
+.trend-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin:10px 0}
+.trend-chart{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fafbfc}
+.trend-chart h4{margin:0 0 6px;font-size:12px;color:var(--mut)}
+.trend-chart svg{width:100%;height:auto}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<nav class="navbar"><div class="nav-inner"><span class="brand">AlphaFund-Daily</span><span class="nav-links"><a class="active" href="index.html">最新報告</a><a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a></span></div></nav>
+<nav class="navbar"><div class="nav-inner"><span class="brand">AlphaFund-Daily</span><span class="nav-links"><a class="active" href="index.html">最新報告</a><a href="trends.html">📈 趨勢</a><a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a></span></div></nav>
 <div class="wrap">
 <header>
 <h1>AlphaFund-Daily 每日境外基金投研報告</h1>
-<div class="meta">報告日期：2026-08-01 ｜ 頁面生成：2026-08-01 21:16（Asia/Taipei）</div>
+<div class="meta">報告日期：2026-08-01 ｜ 頁面生成：2026-08-01 21:33（Asia/Taipei）</div>
 </header>
 
 <details id="cal-panel" class="cal-wrap"><summary>📅 歷史日曆（預設收合，點此或上方導覽展開）</summary><div id="cal" class="cal" aria-label="歷史報告日曆"></div>
@@ -374,12 +394,13 @@ font-size:12px;color:var(--mut)}
 <details id="fund-JDF">
 <summary><span class="g">#1</span>瀚亞投資-日本動力股票基金A (美元避險)
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 88 · 初評分 100.0</span></summary>
+ <span class="num">深度分數 88 · 初評分 100.0</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 62.519000（2026/07/30）<br>
 期間報酬：1月 N/A%　3月 16.98%　6月 26.34%　1年 63.54%　2年 117.76%　3年 230.35%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 鑑於基金過往績效強勁但短期累積漲幅顯著，採用定期定額能分散高檔進場風險並參與日股長期升勢。</div>
@@ -393,12 +414,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-0796">
 <summary><span class="g">#2</span>富蘭克林坦伯頓全球投資系列-生技領航基金美元A(acc)股
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 78 · 初評分 96.9</span></summary>
+ <span class="num">深度分數 78 · 初評分 96.9</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 70.420000（2026/07/30）<br>
 期間報酬：1月 18.71%　3月 13.95%　6月 18.65%　1年 73.19%　2年 106.09%　3年 72.13%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
 <h4>購入模式</h4>定期定額<br>
 基金近1個月漲幅顯著（18.71%），鑑於生技產業波動度較高且短期急漲，建議採取定期定額方式分批佈局以平攤潛在波動風險。</div>
@@ -412,12 +434,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-1962">
 <summary><span class="g">#3</span>富蘭克林坦伯頓全球投資系列-生技領航基金美元F(acc)股
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 80 · 初評分 95.5</span></summary>
+ <span class="num">深度分數 80 · 初評分 95.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 21.780000（2026/07/30）<br>
 期間報酬：1月 18.05%　3月 13.67%　6月 18.05%　1年 71.50%　2年 100.00%　3年 63.76%<br>
 通路：渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
 <h4>購入模式</h4>定期定額<br>
 基金短期漲幅較大且生技產業屬高波動類型，採取定期定額能有效分散高檔追高風險並平滑買進成本。</div>
@@ -431,12 +454,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-JDA">
 <summary><span class="g">#4</span>瀚亞投資-日本動力股票基金A (美元)
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 90.8</span></summary>
+ <span class="num">深度分數 88 · 初評分 90.8</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 35.939000（2026/07/30）<br>
 期間報酬：1月 N/A%　3月 14.12%　6月 20.43%　1年 49.55%　2年 72.34%　3年 93.70%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基金近期表現穩健，值得長期投資</div>
@@ -450,12 +474,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-LU0112497440">
 <summary><span class="g">#5</span>百達-生物科技-R 美元
 　<span class="rating r-中立觀望">中立觀望</span>
-　<span class="num">深度分數 60 · 初評分 82.6</span></summary>
+ <span class="num">深度分數 60 · 初評分 82.6</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 1,287.090000（2026/07/30）<br>
 期間報酬：1月 14.28%　3月 13.21%　6月 14.55%　1年 62.88%　2年 85.89%　3年 50.81%<br>
 通路：匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
 <h4>購入模式</h4>觀望<br>
 由於缺乏直接相關的正面新聞，且市場情緒中立，建議觀望</div>
@@ -469,12 +494,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-ABITFSUSD">
 <summary><span class="g">#6</span>聯博-國際科技基金S級別美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 81.8</span></summary>
+ <span class="num">深度分數 88 · 初評分 81.8</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 175.090000（2026/07/30）<br>
 期間報酬：1月 25.76%　3月 2.41%　6月 20.37%　1年 48.57%　2年 N/A%　3年 N/A%<br>
 通路：元大證券</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基金近期表現優異，且市場情緒正面，適合定期定額投資</div>
@@ -488,12 +514,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-ABITFS1USD">
 <summary><span class="g">#7</span>聯博-國際科技基金S1股美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 80 · 初評分 80.7</span></summary>
+ <span class="num">深度分數 80 · 初評分 80.7</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 902.920000（2026/07/30）<br>
 期間報酬：1月 25.11%　3月 2.18%　6月 19.84%　1年 47.24%　2年 133.43%　3年 97.54%<br>
 通路：元大證券</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 由於基金近期表現良好，且市場情緒正面，建議採用定期定額投資策略</div>
@@ -507,12 +534,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-ABITFIUSD">
 <summary><span class="g">#8</span>聯博-國際科技基金 I股美元
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 80 · 初評分 80.5</span></summary>
+ <span class="num">深度分數 80 · 初評分 80.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 1,871.780000（2026/07/30）<br>
 期間報酬：1月 24.97%　3月 2.14%　6月 19.73%　1年 46.94%　2年 131.85%　3年 95.27%<br>
 通路：元大證券</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
 <h4>購入模式</h4>分批單筆<br>
 考慮到基金的近期表現和市場的中立情緒，採取分批單筆的投資策略</div>
@@ -526,12 +554,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-ABITFAUSD">
 <summary><span class="g">#9</span>聯博-國際科技基金 A股美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 79.5</span></summary>
+ <span class="num">深度分數 88 · 初評分 79.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 1,462.240000（2026/07/30）<br>
 期間報酬：1月 24.39%　3月 1.94%　6月 19.26%　1年 45.77%　2年 126.36%　3年 87.61%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 長期投資科技基金，定期定額可以降低時間成本並平均投資風險</div>
@@ -545,12 +574,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-ABITFEUSD">
 <summary><span class="g">#10</span>聯博-國際科技基金E級別美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 78.2</span></summary>
+ <span class="num">深度分數 88 · 初評分 78.2</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 59.190000（2026/07/30）<br>
 期間報酬：1月 23.67%　3月 1.70%　6月 18.66%　1年 44.33%　2年 119.71%　3年 78.50%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 長期投資觀點下，科技基金的成長潛力大，定期定額可以降低時機風險</div>
@@ -564,12 +594,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-0805">
 <summary><span class="g">#11</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (Ydis)股
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 78.1</span></summary>
+ <span class="num">深度分數 85 · 初評分 78.1</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 53.540000（2026/07/30）<br>
 期間報酬：1月 25.36%　3月 7.23%　6月 14.65%　1年 42.17%　2年 65.55%　3年 32.36%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 長期投資亞洲成長基金，定期定額可以降低時機風險</div>
@@ -583,12 +614,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-0786">
 <summary><span class="g">#12</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (acc)股
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 80 · 初評分 78.0</span></summary>
+ <span class="num">深度分數 80 · 初評分 78.0</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 58.940000（2026/07/30）<br>
 期間報酬：1月 25.35%　3月 7.22%　6月 14.65%　1年 42.13%　2年 65.52%　3年 32.36%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基金近期報酬率表現良好，且富蘭克林坦伯頓全球投資系列的多個基金被新增上架和關注，適合定期定額投資</div>
@@ -602,12 +634,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-IE0000838189">
 <summary><span class="g">#13</span>霸菱韓國基金-A類美元累積型
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 77.1</span></summary>
+ <span class="num">深度分數 85 · 初評分 77.1</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 47.680000（2026/07/30）<br>
 期間報酬：1月 36.11%　3月 -14.67%　6月 6.07%　1年 74.72%　2年 108.94%　3年 50.46%<br>
 通路：匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基金近期表現優異，值得長期投資</div>
@@ -621,12 +654,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-2204">
 <summary><span class="g">#14</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元F(acc)股
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 76.8</span></summary>
+ <span class="num">深度分數 85 · 初評分 76.8</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 15.980000（2026/07/30）<br>
 期間報酬：1月 24.65%　3月 6.96%　6月 14.06%　1年 40.79%　2年 60.76%　3年 25.93%<br>
 通路：渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基金近期表現穩健，且市場對該基金系列的關注度高，適合定期定額投資</div>
@@ -640,12 +674,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-0785">
 <summary><span class="g">#15</span>富蘭克林坦伯頓全球投資系列-新興國家基金美元A (acc)股
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 80 · 初評分 76.0</span></summary>
+ <span class="num">深度分數 80 · 初評分 76.0</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 82.070000（2026/07/30）<br>
 期間報酬：1月 23.62%　3月 3.60%　6月 10.80%　1年 44.44%　2年 84.84%　3年 55.35%<br>
 通路：渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
 <h4>購入模式</h4>定期定額<br>
 長期投資新興國家基金，定期定額可以降低時機風險</div>
@@ -659,12 +694,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-0806">
 <summary><span class="g">#16</span>富蘭克林坦伯頓全球投資系列-新興國家基金美元A (Ydis)股
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 75.6</span></summary>
+ <span class="num">深度分數 85 · 初評分 75.6</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 74.200000（2026/07/30）<br>
 期間報酬：1月 23.30%　3月 3.33%　6月 10.50%　1年 44.05%　2年 79.97%　3年 47.22%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 考慮到基金的長期表現和近期報酬率，定期定額投資可以幫助降低時機風險</div>
@@ -678,12 +714,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-AEJEPIH">
 <summary><span class="g">#17</span>安本基金 - 日本永續股票基金  I 累積 美元避險
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 90 · 初評分 75.4</span></summary>
+ <span class="num">深度分數 90 · 初評分 75.4</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 48.664700（2026/07/30）<br>
 期間報酬：1月 21.90%　3月 7.19%　6月 17.13%　1年 48.22%　2年 115.31%　3年 148.92%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 由於基金近期表現優異，且市場情緒正面，建議採取定期定額投資策略以降低波動風險</div>
@@ -697,12 +734,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-AF24XU">
 <summary><span class="g">#18</span>安本基金 - 日本永續股票基金 X 累積 美元避險
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 75.3</span></summary>
+ <span class="num">深度分數 88 · 初評分 75.3</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 34.654200（2026/07/30）<br>
 期間報酬：1月 21.82%　3月 7.18%　6月 17.10%　1年 48.10%　2年 114.93%　3年 148.01%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基金近期表現優異，且日本永續股票市場前景看好，適合定期定額投資</div>
@@ -716,12 +754,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-JFPATT">
 <summary><span class="g">#19</span>摩根太平洋科技基金 - 摩根太平洋科技(美元)(累計)
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 90 · 初評分 74.5</span></summary>
+ <span class="num">深度分數 90 · 初評分 74.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 158.250000（2026/07/30）<br>
 期間報酬：1月 29.37%　3月 5.34%　6月 16.85%　1年 56.30%　2年 94.43%　3年 32.43%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基金表現優異，市場情緒正面，適合定期定額投資</div>
@@ -735,12 +774,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-AEJEPH">
 <summary><span class="g">#20</span>安本基金 - 日本永續股票基金 A 累積 美元避險
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 74.4</span></summary>
+ <span class="num">深度分數 88 · 初評分 74.4</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 41.585200（2026/07/30）<br>
 期間報酬：1月 21.33%　3月 6.97%　6月 16.66%　1年 47.04%　2年 110.21%　3年 138.94%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 由於基金近期表現穩健，且日本永續股票市場前景看好，適合採取定期定額投資策略</div>
@@ -754,12 +794,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-ABEMVSUSD">
 <summary><span class="g">#21</span>聯博-新興市場價值基金S級別美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 73.6</span></summary>
+ <span class="num">深度分數 88 · 初評分 73.6</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 125.370000（2026/07/30）<br>
 期間報酬：1月 22.80%　3月 2.14%　6月 10.12%　1年 41.68%　2年 76.06%　3年 71.95%<br>
 通路：元大證券</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基於基金近期的優異表現和市場對聯博基金家族的關注，採取定期定額投資策略可以平滑投資風險</div>
@@ -773,12 +814,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-ABEMVS1USD">
 <summary><span class="g">#22</span>聯博-新興市場價值基金S1股美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 80 · 初評分 72.5</span></summary>
+ <span class="num">深度分數 80 · 初評分 72.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 102.640000（2026/07/30）<br>
 期間報酬：1月 22.13%　3月 1.91%　6月 9.61%　1年 40.35%　2年 71.10%　3年 63.96%<br>
 通路：元大證券</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 基金近期表現穩健，定期定額投資可以降低時機風險</div>
@@ -792,12 +834,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-LU0106259558">
 <summary><span class="g">#23</span>施羅德環球基金系列 - 亞洲優勢基金(美元)A-累積
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 80 · 初評分 72.5</span></summary>
+ <span class="num">深度分數 80 · 初評分 72.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 34.825300（2026/07/30）<br>
 期間報酬：1月 17.87%　3月 1.13%　6月 8.71%　1年 37.72%　2年 58.80%　3年 32.14%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
 <h4>購入模式</h4>定期定額<br>
 由於基金近期報酬率表現穩健，採取定期定額投資策略可以平滑投資成本和風險</div>
@@ -811,12 +854,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-ABEMVIUSD">
 <summary><span class="g">#24</span>聯博-新興市場價值基金I股美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 72.3</span></summary>
+ <span class="num">深度分數 88 · 初評分 72.3</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 99.400000（2026/07/30）<br>
 期間報酬：1月 22.01%　3月 1.89%　6月 9.53%　1年 40.06%　2年 70.21%　3年 62.52%<br>
 通路：元大證券</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 長期投資新興市場價值基金，定期定額可以降低時機風險</div>
@@ -830,12 +874,13 @@ font-size:12px;color:var(--mut)}
 </div></details><details id="fund-AIA">
 <summary><span class="g">#25</span>瀚亞投資-亞洲股票收益基金A(美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 72.3</span></summary>
+ <span class="num">深度分數 85 · 初評分 72.3</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 21.567000（2026/07/30）<br>
 期間報酬：1月 18.57%　3月 1.56%　6月 7.87%　1年 37.24%　2年 70.72%　3年 43.60%<br>
 通路：元大證券、渣打銀行</div>
+<div class="blk trend-blk"><h4>📈 近期趨勢</h4><span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
 長期投資，穩定配置</div>
@@ -847,6 +892,8 @@ font-size:12px;color:var(--mut)}
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details>
+
+<h2>📊 趨勢比較（多日並排）</h2><p class="trend-note">歷史資料累積中：需 ≥2 個交易日，每日排程將自動累積。</p>
 
 <h2>稅務說明</h2>
 <div class="tax" style="margin-top:0">

@@ -16,8 +16,19 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .config import HISTORY_DIR, PROJECT_ROOT, TIMEZONE
+from .trends import (
+    DEFAULT_WINDOW,
+    TrendPoint,
+    build_time_series,
+    comparison_data,
+    load_all_dates,
+    series_for,
+    sparkline_svg,
+    trend_stats,
+)
 
 REPORT_FILE = PROJECT_ROOT / "docs" / "index.html"
+TRENDS_FILE = PROJECT_ROOT / "docs" / "trends.html"
 
 _PERIODS = [
     ("1月", "navValue5"),
@@ -92,6 +103,26 @@ font-size:12px;color:var(--mut)}
 .cal-grid .day a{display:block;color:var(--brand);text-decoration:none;font-weight:600;border-radius:6px}
 .cal-grid .day a:hover{background:#e5f1f8}
 .cal-grid .day.today a{outline:1px solid var(--brand)}
+.spark{display:block;margin:2px 0;max-width:100%}
+.trend-blk h4{margin:6px 0 2px;font-size:12px;color:var(--mut)}
+.trend-metric{font-size:11px;color:var(--mut);display:block;margin-top:4px}
+.trend-note{font-size:12px;color:var(--mut)}
+.trend-stats{font-size:11px;color:var(--mut);margin-top:4px}
+table.mini{margin-top:6px;border:1px solid var(--line);border-radius:6px}
+table.mini th,table.mini td{padding:2px 8px;font-size:11px;text-align:right}
+table.mini th:first-child,table.mini td:first-child{text-align:left}
+.cmp-scroll{overflow-x:auto;border-radius:8px}
+table.cmp th,table.cmp td{white-space:nowrap}
+td.cmp-rank,th.cmp-rank{text-align:center}
+td.cmp-miss{color:#b0b6bd;text-align:center}
+.cmp-foot{font-size:11px;color:var(--mut);margin-top:4px}
+.trend-hero{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:10px 0}
+.trend-hero h3{margin:0 0 2px;font-size:15px}
+.trend-hero .sub{font-size:12px;color:var(--mut)}
+.trend-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:14px;margin:10px 0}
+.trend-chart{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fafbfc}
+.trend-chart h4{margin:0 0 6px;font-size:12px;color:var(--mut)}
+.trend-chart svg{width:100%;height:auto}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
 """
 
@@ -173,14 +204,17 @@ def _calendar_panel(dates: list[str], current: str, base: str) -> str:
 
 def _navbar_html(is_latest: bool, date: str) -> str:
     """固定頂部導覽列。"""
+    trends_href = "trends.html" if is_latest else "../trends.html"
     if is_latest:
         links = (
             '<a class="active" href="index.html">最新報告</a>'
+            f'<a href="{trends_href}">📈 趨勢</a>'
             '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
         )
     else:
         links = (
             '<a href="../index.html">← 最新報告</a>'
+            f'<a href="{trends_href}">📈 趨勢</a>'
             '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
             f'<span class="date-badge">{_esc(date)}</span>'
         )
@@ -218,7 +252,157 @@ def _returns_html(fund_code: str, nav_by_code: dict[str, dict]) -> str:
     return "　".join(parts)
 
 
-def _detail_card(fa: dict, nav_by_code: dict[str, dict]) -> str:
+def _trend_mini_table(points: list[TrendPoint]) -> str:
+    rows = "".join(
+        f"<tr><td>{_esc(p.date[5:])}</td>"
+        f"<td class=\"num\">{_esc(f'{p.preliminary_score:.0f}')}</td>"
+        f"<td class=\"num\">{_esc(p.rank)}</td></tr>"
+        for p in points
+    )
+    return (
+        '<table class="mini"><thead><tr><th>日期</th><th>初評分</th><th>排名</th></tr></thead>'
+        f"<tbody>{rows}</tbody></table>"
+    )
+
+
+def _trend_block(fund_code: str, series: dict[str, list[TrendPoint]] | None) -> str:
+    """個案卡片內的近期趨勢區塊（sparkline + 迷你表）。資料不足時回傳累積中提示。"""
+    if not series:
+        return ""
+    pts = series_for(fund_code, series)
+    if len(pts) < 2:
+        return (
+            '<div class="blk trend-blk"><h4>📈 近期趨勢</h4>'
+            '<span class="trend-note">歷史資料累積中（需 ≥2 個交易日，每日排程自動累積）</span></div>'
+        )
+    s_score = sparkline_svg(pts, "preliminary_score", label="初評分")
+    s_rank = sparkline_svg(pts, "rank", label="排名")
+    if not s_score or not s_rank:
+        return ""
+    st = trend_stats(pts, "preliminary_score")
+    st_r = trend_stats(pts, "rank")
+    stats_line = (
+        f"初 {st['first']:.0f} → 末 {st['last']:.0f}"
+        f"（{'▲' if st['delta'] >= 0 else '▼'}{abs(st['delta']):.1f}）"
+        f"・高 {st['max']:.0f}／低 {st['min']:.0f}／均 {st['avg']:.0f}"
+    )
+    rank_line = f"排名區間 {st_r['max']}–{st_r['min']}"
+    return (
+        '<div class="blk trend-blk"><h4>📈 近期趨勢（近 '
+        f"{len(pts)} 日）</h4>"
+        '<span class="trend-metric">初評分</span>' + s_score
+        + '<span class="trend-metric">排名（倒序，越低越好）</span>' + s_rank
+        + f'<div class="trend-stats">{_esc(stats_line)}<br>{_esc(rank_line)}</div>'
+        + _trend_mini_table(pts[-5:])
+        + "</div>"
+    )
+
+
+def _comparison_section(
+    analysis: dict,
+    series: dict[str, list[TrendPoint]] | None,
+    window: int,
+) -> str:
+    """首頁「趨勢比較」：前段（深度分析）基金 × 最近 N 交易日的排名並排表 + 評分表。"""
+    if not series:
+        return ""
+    dates = sorted({p.date for pts in series.values() for p in pts})
+    if len(dates) < 2:
+        return (
+            '<h2>📊 趨勢比較（多日並排）</h2>'
+            '<p class="trend-note">歷史資料累積中：需 ≥2 個交易日，每日排程將自動累積。</p>'
+        )
+    funds = [f for f in analysis.get("funds", []) if f.get("deep_analysis")]
+    if not funds:
+        return ""
+    top_codes = [f["fund_code"] for f in funds]
+    names = {f["fund_code"]: f["name"] for f in funds}
+    data = comparison_data(series, top_codes, window, names=names, dates=dates)
+    cmp_dates = list(data["dates"])
+
+    def cell(code: str, date: str) -> str:
+        p = next((x for x in series.get(code, []) if x.date == date), None)
+        if p is None:
+            return '<td class="cmp-miss">—</td>'
+        tip = f"title=\"初評分 {p.preliminary_score:.0f}"
+        if p.overall_rating:
+            tip += f"・{p.overall_rating}"
+        tip += '"'
+        return f'<td class="cmp-rank" {tip}>{p.rank}</td>'
+
+    def score_cell(code: str, date: str) -> str:
+        p = next((x for x in series.get(code, []) if x.date == date), None)
+        if p is None:
+            return '<td class="cmp-miss">—</td>'
+        return f'<td class="cmp-rank">{p.preliminary_score:.0f}</td>'
+
+    head_cells = "".join(
+        f'<th class="cmp-rank" title="{_esc(d)}">{_esc(d[5:])}</th>' for d in cmp_dates
+    )
+    rows = []
+    score_rows = []
+    for f in funds:
+        code = f["fund_code"]
+        name = f"<td><a href=\"#fund-{_esc(code)}\">{_esc(f['name'])}</a></td>"
+        rows.append(
+            f"<tr>{name}" + "".join(cell(code, d) for d in cmp_dates)
+            + _rank_delta_cell(code, series) + _rank_spark_cell(code, series)
+            + "</tr>"
+        )
+        score_rows.append(
+            f"<tr>{name}" + "".join(score_cell(code, d) for d in cmp_dates) + "</tr>"
+        )
+    rank_table = (
+        '<table class="cmp"><thead><tr><th>基金</th>'
+        + head_cells
+        + "<th>近窗變化</th><th>排名趨勢</th></tr></thead>"
+        + f"<tbody>{''.join(rows)}</tbody></table>"
+    )
+    score_table = (
+        '<table class="cmp"><thead><tr><th>基金</th>' + head_cells + "</tr></thead>"
+        + f"<tbody>{''.join(score_rows)}</tbody></table>"
+    )
+
+    return (
+        f'<h2>📊 趨勢比較（近 {len(cmp_dates)} 日）</h2>'
+        '<p class="trend-note">欄位＝當日排名（將滑鼠移到數字可看當日初評分與評級）；'
+        '「近窗變化」為視窗首日→末日排名變動（▲ 上升）。</p>'
+        f'<div class="cmp-scroll">{rank_table}</div>'
+        '<details><summary><span class="g">▶</span> 展開／收合 初評分並排表</summary>'
+        f'<div class="cmp-scroll">{score_table}</div></details>'
+    )
+
+
+def _rank_delta_cell(
+    code: str, series: dict[str, list[TrendPoint]]
+) -> str:
+    pts = series.get(code, [])
+    first, last = (pts[0].rank, pts[-1].rank) if len(pts) >= 2 else (None, None)
+    if first is None or last is None:
+        return '<td class="cmp-rank">—</td>'
+    d = last - first
+    if d == 0:
+        label, cls = "持平", "sent-u"
+    elif d < 0:
+        label, cls = f"▲{abs(d)}", "sent-p"
+    else:
+        label, cls = f"▼{d}", "sent-n"
+    return f'<td class="cmp-rank"><span class="{cls}">{label}</span></td>'
+
+
+def _rank_spark_cell(
+    code: str, series: dict[str, list[TrendPoint]]
+) -> str:
+    pts = series.get(code, [])
+    spark = sparkline_svg(pts, "rank", width=120, height=34, label="排名")
+    return f"<td>{spark}</td>"
+
+
+def _detail_card(
+    fa: dict,
+    nav_by_code: dict[str, dict],
+    series: dict[str, list[TrendPoint]] | None = None,
+) -> str:
     da = fa.get("deep_analysis") or {}
     name = fa["name"]
     rating = da.get("overall_rating") or "-"
@@ -231,12 +415,13 @@ def _detail_card(fa: dict, nav_by_code: dict[str, dict]) -> str:
     return f"""<details id="fund-{_esc(fa['fund_code'])}">
 <summary><span class="g">#{fa['rank']}</span>{_esc(name)}
 　<span class="rating r-{_esc(rating)}">{_esc(rating)}</span>
-　<span class="num">深度分數 {score_txt} · 初評分 {fa['preliminary_score']}</span></summary>
+ <span class="num">深度分數 {score_txt} · 初評分 {fa['preliminary_score']}</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 {_esc(nav.get("nav", "-"))}（{_esc(nav.get("nav_date", "-"))}）<br>
 期間報酬：{_returns_html(fa['fund_code'], nav_by_code)}<br>
 通路：{_esc("、".join(fa.get("channels", [])) or "-")}</div>
+{_trend_block(fa['fund_code'], series)}
 <div class="blk"><h4>市場情緒</h4><span class="{sent_cls}">{_esc(sentiment)}</span>
 <h4>購入模式</h4>{_esc(da.get("recommended_strategy", "-"))}<br>
 {_esc(da.get("strategy_explanation", ""))}</div>
@@ -280,6 +465,8 @@ def render_report(
     compact: bool = False,
     calendar_html: str = "",
     nav_html: str = "",
+    series: dict[str, list[TrendPoint]] | None = None,
+    trend_window: int = DEFAULT_WINDOW,
 ) -> str:
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
     funds = analysis.get("funds", [])
@@ -288,10 +475,13 @@ def render_report(
     scored = [f for f in funds if f.get("deep_analysis")]
 
     detail_cards = "".join(
-        _detail_card(f, nav_by_code)
+        _detail_card(f, nav_by_code, series if not compact else None)
         for f in funds
         if f.get("deep_analysis")
     ) or "<p>（本日無深度分析資料）</p>"
+    comparison = (
+        "" if compact else _comparison_section(analysis, series, trend_window)
+    )
 
     if compact:
         # 精簡版：僅前 50 名排名表（歷史 archive 頁，控制體積）
@@ -341,6 +531,8 @@ def render_report(
 <h2>個案深度解讀（前 {deep_count} 名）</h2>
 {detail_cards}
 
+{comparison}
+
 <h2>稅務說明</h2>
 <div class="tax" style="margin-top:0">
 本專案標的皆為境外基金（非 TW 註冊），資本利得與配息 100% 歸類為「海外所得」：
@@ -362,7 +554,8 @@ def render_report(
 
 def generate_report(date: str, out_file: Path | None = None) -> Path:
     analysis, nav_by_code = load_report_data(date)
-    html_out = render_report(analysis, nav_by_code, date)
+    series = build_time_series()
+    html_out = render_report(analysis, nav_by_code, date, series=series)
     path = out_file or REPORT_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(html_out, encoding="utf-8")
@@ -386,12 +579,15 @@ def generate_archive(docs_dir: Path | None = None) -> tuple[Path, list[Path]]:
 
     - archive/<YYYY-MM-DD>.html：精簡版報告 + 月曆（歷史瀏覽）。
     - index.html：最新完整報告 + 月曆（預設顯示最新）。
+    - trends.html：趨勢比較頁（隨同更新）。
     """
     docs_dir = docs_dir or PROJECT_ROOT / "docs"
     archive_dir = docs_dir / "archive"
     dates = _available_dates()
     if not dates:
         raise FileNotFoundError("data/history 下無可生成之分析資料")
+
+    series = build_time_series()
 
     pages: list[Path] = []
     for date in dates:
@@ -411,7 +607,118 @@ def generate_archive(docs_dir: Path | None = None) -> tuple[Path, list[Path]]:
             compact=False,
             calendar_html=_calendar_panel(dates, latest, base="archive/"),
             nav_html=_navbar_html(is_latest=True, date=latest),
+            series=series,
         ),
         encoding="utf-8",
     )
+    generate_trends(docs_dir=docs_dir, series=series)
     return index, pages
+
+
+def _trends_navbar_html() -> str:
+    """趨勢頁固定頂部導覽列（日曆面板位於最新報告頁）。"""
+    return (
+        '<nav class="navbar"><div class="nav-inner">'
+        '<span class="brand">AlphaFund-Daily</span>'
+        '<span class="nav-links">'
+        '<a href="index.html">最新報告</a>'
+        '<a class="active" href="trends.html">📈 趨勢</a>'
+        "</span></div></nav>"
+    )
+
+
+def _render_trends_page(
+    series: dict[str, list[TrendPoint]],
+    dates: list[str],
+    nav_html: str,
+) -> str:
+    """趨勢比較頁：前段基金之較大趨勢圖 + 多日比較表 + 區間統計。"""
+    now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
+    if len(dates) < 2:
+        body = (
+            '<div class="wrap"><header><h1>📈 趨勢比較</h1>'
+            '<div class="meta">趨勢頁隨每日排程自動累積；目前歷史僅 '
+            f'{len(dates)} 個交易日，需 ≥2 日才產生圖表。</div></header>'
+            '<p class="trend-note">請於第二個交易日後重新檢視。</p></div>'
+        )
+        return f"""<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AlphaFund-Daily 趨勢比較</title>
+<style>{CSS}</style></head>
+<body>{nav_html}{body}</body></html>"""
+
+    latest_analysis, _ = load_report_data(dates[-1])
+    top = [f for f in latest_analysis.get("funds", []) if f.get("deep_analysis")]
+    if not top:
+        body = '<div class="wrap"><p class="trend-note">目前無深度分析基金可顯示趨勢。</p></div>'
+        return f"""<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AlphaFund-Daily 趨勢比較</title>
+<style>{CSS}</style></head>
+<body>{nav_html}{body}</body></html>"""
+
+    cards = []
+    for f in top:
+        code = f["fund_code"]
+        pts = series_for(code, series)
+        if len(pts) < 2:
+            continue
+        s_score = sparkline_svg(pts, "preliminary_score", width=560, height=150, label="初評分")
+        s_rank = sparkline_svg(pts, "rank", width=560, height=150, label="排名")
+        st = trend_stats(pts, "preliminary_score")
+        st_r = trend_stats(pts, "rank")
+        rating = (f.get("deep_analysis") or {}).get("overall_rating") or "-"
+        date_txt = "、".join(p.date[5:] for p in pts)
+        cards.append(
+            f'<div class="trend-hero"><h3>#{f["rank"]} {_esc(f["name"])}'
+            f' <span class="rating r-{_esc(rating)}">{_esc(rating)}</span></h3>'
+            f'<div class="sub">{_esc(f["fund_code"])} ｜ 近 {len(pts)} 個交易日（{_esc(date_txt)}）</div>'
+            '<div class="trend-charts">'
+            f'<div class="trend-chart"><h4>初評分（{st["first"]:.0f} → {st["last"]:.0f}'
+            f'，{"▲" if st["delta"] >= 0 else "▼"}{abs(st["delta"]):.1f}）</h4>{s_score}</div>'
+            f'<div class="trend-chart"><h4>排名（倒序，越低越好；區間 {st_r["max"]}–{st_r["min"]}）</h4>{s_rank}</div>'
+            "</div>"
+            f'<div class="trend-stats">區間：初 {st["first"]:.0f} → 末 {st["last"]:.0f}'
+            f' ｜ 高 {st["max"]:.0f} ／ 低 {st["min"]:.0f} ／ 平均 {st["avg"]:.0f}'
+            f' ｜ 排名區間 {st_r["max"]}–{st_r["min"]}</div>'
+            + _trend_mini_table(pts[-10:])
+            + "</div>"
+        )
+    if not cards:
+        cards = ['<p class="trend-note">歷史資料尚不足 2 個交易日。</p>']
+
+    body = (
+        '<div class="wrap"><header><h1>📈 趨勢比較</h1>'
+        f'<div class="meta">資料範圍：{_esc(dates[0])} – {_esc(dates[-1])}'
+        f'（{len(dates)} 個交易日）｜ 頁面生成：{_esc(now)}（Asia/Taipei）</div></header>'
+        '<p style="font-size:13px;color:var(--mut)">以下為最近一次深度分析之基金，'
+        '顯示其歷史初評分與排名走勢；每日排程自動累積新點。</p>'
+        + "".join(cards)
+        + f'<footer><p><b>免責聲明：</b>趨勢圖僅反映歷史統計，過去績效不代表未來績效保證。</p></footer></div>'
+    )
+    return f"""<!DOCTYPE html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AlphaFund-Daily 趨勢比較</title>
+<style>{CSS}</style></head>
+<body>{nav_html}{body}</body></html>"""
+
+
+def generate_trends(
+    docs_dir: Path | None = None,
+    series: dict[str, list[TrendPoint]] | None = None,
+) -> Path:
+    """生成 docs/trends.html（趨勢比較頁）。"""
+    docs_dir = docs_dir or PROJECT_ROOT / "docs"
+    series = series if series is not None else build_time_series()
+    dates = load_all_dates()
+    nav_html = _trends_navbar_html()
+    path = docs_dir / "trends.html"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_render_trends_page(series, dates, nav_html), encoding="utf-8")
+    return path

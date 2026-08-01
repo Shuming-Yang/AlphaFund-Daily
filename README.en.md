@@ -176,7 +176,9 @@ The daily report page includes the following modules:
 | M1 Data Pipeline | Define target fund list (3 channels / USD / offshore income), NAV & news fetching | Target list and daily raw dataset | Done |
 | M2 AI Analysis Module | Preliminary ranking, Gemini deep analysis (scoring, sentiment, buying strategy, pros/cons) | Structured AI analysis output | Done |
 | M3 Report & Schedule | Static web report generation and daily 06:00 scheduled publishing | Daily report pages | Done |
-| M4 Quality Tuning | Score calibration, cost optimization, anomaly alerts, historical tracking | Stable, running automation | Pending |
+| M4 History Archive & Calendar | Historical archive pages + calendar browsing (latest/historical switching) | Historical report calendar | Done |
+| M5 Trend Comparison | Score/rank trends over time, multi-day side-by-side comparison | Case trend charts + comparison table + `trends.html` | Done |
+| M6 Quality Tuning | Score calibration, cost optimization, anomaly alerts, rating diversity | Stable, running automation | Pending |
 
 Detailed planning for each milestone will be expanded later using the "grill-with-docs" skill.
 
@@ -184,7 +186,7 @@ Detailed planning for each milestone will be expanded later using the "grill-wit
 
 ```
 ├── .github/workflows/        Daily 06:00 schedule
-├── src/alphafund/            M1–M2 package (tdcc/news/scoring/llm/analyzer/report/pipeline/cli)
+├── src/alphafund/            M1–M5 package (tdcc/news/scoring/llm/analyzer/report/trends/pipeline/cli)
 ├── scripts/                  Entry points (run_m1.py)
 ├── data/
 │   └── history/<date>/       Daily snapshots (snapshot / nav / news / universe / analysis, .json.gz)

@@ -176,7 +176,9 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 | M1 資料管道 | 定義目標基金清單（三通路 / USD / 境外所得）、淨值與新聞抓取 | 目標清單與每日原始資料集 | 已完成 |
 | M2 AI 分析模組 | 初評分排名、Gemini 深度分析（評分矩陣、情緒、購入策略、優劣勢） | 結構化 AI 分析結果 | 已完成 |
 | M3 報告與排程 | 靜態網頁報告產出與每日 06:00 排程發布 | 每日報告頁面 | 已完成 |
-| M4 品質調校 | 評分校準、成本優化、異常告警、歷史追蹤 | 穩定運行之自動化系統 | 待辦 |
+| M4 歷史存檔與日曆 | 歷史 archive 頁 + 月曆瀏覽（首頁/歷史報告切換） | 歷史報告日曆 | 已完成 |
+| M5 趨勢比較 | 評分／排名隨時間趨勢圖、多日並排比較 | 個案趨勢圖 + 比較表 + `trends.html` | 已完成 |
+| M6 品質調校 | 評分校準、成本優化、異常告警、評級多樣性 | 穩定運行之自動化系統 | 待辦 |
 
 各里程碑之詳細規劃與實作細節，將於後續以「grill-with-docs」技能逐項展開。
 
@@ -184,17 +186,19 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 
 ```
 ├── .github/workflows/        每日 06:00 排程
-├── src/alphafund/            M1–M2 套件（tdcc/news/scoring/llm/analyzer/report/pipeline/cli）
+├── src/alphafund/            M1–M5 套件（tdcc/news/scoring/llm/analyzer/report/trends/pipeline/cli）
 ├── scripts/                  執行入口（run_m1.py）
 ├── data/
 │   └── history/<日期>/       每日快照（snapshot / nav / news / universe / analysis，.json.gz）
 ├── docs/
 │   ├── index.html            每日報告頁面（GitHub Pages 發布，含日曆）
+│   ├── trends.html           趨勢比較頁（趨勢圖 + 多日並排比較）
 │   ├── archive/<日期>.html   歷史報告存檔（日曆瀏覽）
 │   ├── adr/                  重大決策記錄
 │   ├── m1-design.md          M1 設計文件
 │   ├── m2-design.md          M2 設計文件
-│   └── m3-design.md          M3 設計文件
+│   ├── m3-design.md          M3 設計文件
+│   └── m4-calendar-archive.md  M4 設計文件
 ├── tests/                    單元測試（fixtures）
 ├── README.md                 繁體中文（預設）
 ├── README.en.md              English
