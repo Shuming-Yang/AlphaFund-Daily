@@ -34,7 +34,21 @@ CSS = """
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;
 background:var(--bg);color:var(--ink);line-height:1.6}
-.wrap{max-width:980px;margin:0 auto;padding:24px 16px 48px}
+.wrap{width:min(96%,1280px);margin:0 auto;padding:24px 16px 48px}
+.navbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
+border-bottom:1px solid var(--line)}
+.nav-inner{width:min(96%,1280px);margin:0 auto;display:flex;align-items:center;justify-content:space-between;
+padding:10px 16px}
+.brand{font-weight:700;color:var(--brand);font-size:15px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-links a{color:var(--mut);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;white-space:nowrap}
+.nav-links a:hover{background:#eef1f4;color:var(--ink)}
+.nav-links a.active{background:var(--brand);color:#fff;font-weight:600}
+.date-badge{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:20px;
+padding:2px 10px;margin-left:6px;background:#fafbfc}
+.cal-wrap{border:none;background:none;padding:0;margin:0 0 4px}
+.cal-wrap summary{cursor:pointer;color:var(--brand);font-size:13px;list-style:none;padding:4px 0;width:fit-content}
+.cal-wrap summary::-webkit-details-marker{display:none}
 header h1{font-size:22px;margin:0 0 4px;color:var(--brand)}
 header .meta{color:var(--mut);font-size:13px}
 .stat-row{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0}
@@ -78,8 +92,6 @@ font-size:12px;color:var(--mut)}
 .cal-grid .day a{display:block;color:var(--brand);text-decoration:none;font-weight:600;border-radius:6px}
 .cal-grid .day a:hover{background:#e5f1f8}
 .cal-grid .day.today a{outline:1px solid var(--brand)}
-.toplinks{font-size:13px;margin-bottom:4px}
-.toplinks a{color:var(--brand);text-decoration:none;margin-right:12px}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
 """
 
@@ -133,6 +145,10 @@ def _calendar_js(dates: list[str], current: str, base: str) -> str:
     render();
   }};
   render();
+  window.openCalPanel = function(){{
+    var p = document.getElementById('cal-panel');
+    if (p) {{ p.open = true; p.scrollIntoView({{ behavior: 'smooth' }}); }}
+  }};
 }})();
 </script>"""
 
@@ -142,6 +158,37 @@ def render_calendar(dates: list[str], current: str, base: str = "archive/") -> s
     return (
         '<div id="cal" class="cal" aria-label="歷史報告日曆"></div>\n'
         + _calendar_js(dates, current, base)
+    )
+
+
+def _calendar_panel(dates: list[str], current: str, base: str) -> str:
+    """月曆收合面板（預設關閉，點 navbar「歷史日曆」展開）。"""
+    return (
+        '<details id="cal-panel" class="cal-wrap">'
+        "<summary>📅 歷史日曆（預設收合，點此或上方導覽展開）</summary>"
+        + render_calendar(dates, current, base)
+        + "</details>"
+    )
+
+
+def _navbar_html(is_latest: bool, date: str) -> str:
+    """固定頂部導覽列。"""
+    if is_latest:
+        links = (
+            '<a class="active" href="index.html">最新報告</a>'
+            '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
+        )
+    else:
+        links = (
+            '<a href="../index.html">← 最新報告</a>'
+            '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
+            f'<span class="date-badge">{_esc(date)}</span>'
+        )
+    return (
+        '<nav class="navbar"><div class="nav-inner">'
+        '<span class="brand">AlphaFund-Daily</span>'
+        f'<span class="nav-links">{links}</span>'
+        "</div></nav>"
     )
 
 
@@ -232,7 +279,7 @@ def render_report(
     date: str,
     compact: bool = False,
     calendar_html: str = "",
-    top_links: str = "",
+    nav_html: str = "",
 ) -> str:
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
     funds = analysis.get("funds", [])
@@ -265,9 +312,9 @@ def render_report(
 <style>{CSS}</style>
 </head>
 <body>
+{nav_html}
 <div class="wrap">
 <header>
-{top_links}
 <h1>AlphaFund-Daily 每日境外基金投研報告</h1>
 <div class="meta">報告日期：{_esc(date)} ｜ 頁面生成：{_esc(now)}（Asia/Taipei）</div>
 </header>
@@ -329,8 +376,8 @@ def _render_archive_page(date: str, dates: list[str]) -> str:
         nav_by_code,
         date,
         compact=True,
-        calendar_html=render_calendar(dates, date, base=""),
-        top_links='<div class="toplinks"><a href="../index.html">← 最新報告</a></div>',
+        calendar_html=_calendar_panel(dates, date, base=""),
+        nav_html=_navbar_html(is_latest=False, date=date),
     )
 
 
@@ -362,11 +409,8 @@ def generate_archive(docs_dir: Path | None = None) -> tuple[Path, list[Path]]:
             nav_by_code,
             latest,
             compact=False,
-            calendar_html=render_calendar(dates, latest, base="archive/"),
-            top_links=(
-                f'<div class="toplinks"><a href="archive/{latest}.html">'
-                f"本日報告存檔 ↗</a></div>"
-            ),
+            calendar_html=_calendar_panel(dates, latest, base="archive/"),
+            nav_html=_navbar_html(is_latest=True, date=latest),
         ),
         encoding="utf-8",
     )

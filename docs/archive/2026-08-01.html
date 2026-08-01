@@ -10,7 +10,21 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;
 background:var(--bg);color:var(--ink);line-height:1.6}
-.wrap{max-width:980px;margin:0 auto;padding:24px 16px 48px}
+.wrap{width:min(96%,1280px);margin:0 auto;padding:24px 16px 48px}
+.navbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
+border-bottom:1px solid var(--line)}
+.nav-inner{width:min(96%,1280px);margin:0 auto;display:flex;align-items:center;justify-content:space-between;
+padding:10px 16px}
+.brand{font-weight:700;color:var(--brand);font-size:15px}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-links a{color:var(--mut);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;white-space:nowrap}
+.nav-links a:hover{background:#eef1f4;color:var(--ink)}
+.nav-links a.active{background:var(--brand);color:#fff;font-weight:600}
+.date-badge{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:20px;
+padding:2px 10px;margin-left:6px;background:#fafbfc}
+.cal-wrap{border:none;background:none;padding:0;margin:0 0 4px}
+.cal-wrap summary{cursor:pointer;color:var(--brand);font-size:13px;list-style:none;padding:4px 0;width:fit-content}
+.cal-wrap summary::-webkit-details-marker{display:none}
 header h1{font-size:22px;margin:0 0 4px;color:var(--brand)}
 header .meta{color:var(--mut);font-size:13px}
 .stat-row{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0}
@@ -54,20 +68,18 @@ font-size:12px;color:var(--mut)}
 .cal-grid .day a{display:block;color:var(--brand);text-decoration:none;font-weight:600;border-radius:6px}
 .cal-grid .day a:hover{background:#e5f1f8}
 .cal-grid .day.today a{outline:1px solid var(--brand)}
-.toplinks{font-size:13px;margin-bottom:4px}
-.toplinks a{color:var(--brand);text-decoration:none;margin-right:12px}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+<nav class="navbar"><div class="nav-inner"><span class="brand">AlphaFund-Daily</span><span class="nav-links"><a href="../index.html">← 最新報告</a><a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a><span class="date-badge">2026-08-01</span></span></div></nav>
 <div class="wrap">
 <header>
-<div class="toplinks"><a href="../index.html">← 最新報告</a></div>
 <h1>AlphaFund-Daily 每日境外基金投研報告</h1>
-<div class="meta">報告日期：2026-08-01 ｜ 頁面生成：2026-08-01 21:05（Asia/Taipei）</div>
+<div class="meta">報告日期：2026-08-01 ｜ 頁面生成：2026-08-01 21:16（Asia/Taipei）</div>
 </header>
 
-<div id="cal" class="cal" aria-label="歷史報告日曆"></div>
+<details id="cal-panel" class="cal-wrap"><summary>📅 歷史日曆（預設收合，點此或上方導覽展開）</summary><div id="cal" class="cal" aria-label="歷史報告日曆"></div>
 <script>
 (function(){
   var dates = ["2026-08-01"];
@@ -104,13 +116,17 @@ font-size:12px;color:var(--mut)}
     render();
   };
   render();
+  window.openCalPanel = function(){
+    var p = document.getElementById('cal-panel');
+    if (p) { p.open = true; p.scrollIntoView({ behavior: 'smooth' }); }
+  };
 })();
-</script>
+</script></details>
 
 <div class="stat-row">
 <div class="stat"><b>2128</b><span>目標基金（三通路 × USD）</span></div>
-<div class="stat"><b>21</b><span>深度分析檔數</span></div>
-<div class="stat"><b>21</b><span>已產生 AI 評級</span></div>
+<div class="stat"><b>25</b><span>深度分析檔數</span></div>
+<div class="stat"><b>25</b><span>已產生 AI 評級</span></div>
 </div>
 
 <h2>基金排名</h2>
@@ -120,15 +136,15 @@ font-size:12px;color:var(--mut)}
 <div style="max-height:480px;overflow:auto;border-radius:8px">
 <table>
 <thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th></tr></thead>
-<tbody><tr><td class="num">1</td><td><a href="#fund-JDF">瀚亞投資-日本動力股票基金A (美元避險)</a></td><td class="num">100.0</td><td class="num">90</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">2</td><td><a href="#fund-0796">富蘭克林坦伯頓全球投資系列-生技領航基金美元A(acc)股</a></td><td class="num">93.9</td><td class="num">92</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">3</td><td><a href="#fund-1962">富蘭克林坦伯頓全球投資系列-生技領航基金美元F(acc)股</a></td><td class="num">92.5</td><td class="num">80</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>分批單筆</td></tr><tr><td class="num">4</td><td><a href="#fund-JDA">瀚亞投資-日本動力股票基金A (美元)</a></td><td class="num">90.8</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">5</td><td><a href="#fund-LU0112497440">百達-生物科技-R 美元</a></td><td class="num">82.6</td><td class="num">80</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>定期定額</td></tr><tr><td class="num">6</td><td><a href="#fund-ABITFSUSD">聯博-國際科技基金S級別美元</a></td><td class="num">81.8</td><td class="num">80</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">7</td><td><a href="#fund-ABITFS1USD">聯博-國際科技基金S1股美元</a></td><td class="num">80.7</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">8</td><td><a href="#fund-ABITFIUSD">聯博-國際科技基金 I股美元</a></td><td class="num">80.5</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">9</td><td><a href="#fund-ABITFAUSD">聯博-國際科技基金 A股美元</a></td><td class="num">79.5</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">10</td><td><a href="#fund-ABITFEUSD">聯博-國際科技基金E級別美元</a></td><td class="num">78.2</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">11</td><td><a href="#fund-AEJEPIH">安本基金 - 日本永續股票基金  I 累積 美元避險</a></td><td class="num">75.4</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">12</td><td><a href="#fund-AF24XU">安本基金 - 日本永續股票基金 X 累積 美元避險</a></td><td class="num">75.3</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">13</td><td><a href="#fund-0805">富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (Ydis)股</a></td><td class="num">75.1</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">14</td><td><a href="#fund-0786">富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (acc)股</a></td><td class="num">75.0</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">15</td><td><a href="#fund-JFPATT">摩根太平洋科技基金 - 摩根太平洋科技(美元)(累計)</a></td><td class="num">74.5</td><td class="num">90</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">16</td><td><a href="#fund-AEJEPH">安本基金 - 日本永續股票基金 A 累積 美元避險</a></td><td class="num">74.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">17</td><td><a href="#fund-IE0000838189">霸菱韓國基金-A類美元累積型</a></td><td class="num">74.1</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">18</td><td><a href="#fund-2204">富蘭克林坦伯頓全球投資系列-亞洲成長基金美元F(acc)股</a></td><td class="num">73.8</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">19</td><td><a href="#fund-ABEMVSUSD">聯博-新興市場價值基金S級別美元</a></td><td class="num">73.6</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">20</td><td><a href="#fund-0785">富蘭克林坦伯頓全球投資系列-新興國家基金美元A (acc)股</a></td><td class="num">73.0</td><td class="num">80</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>定期定額</td></tr><tr><td class="num">21</td><td><a href="#fund-0806">富蘭克林坦伯頓全球投資系列-新興國家基金美元A (Ydis)股</a></td><td class="num">72.6</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">22</td><td><a href="#fund-ABEMVS1USD">聯博-新興市場價值基金S1股美元</a></td><td class="num">72.5</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">23</td><td><a href="#fund-LU0106259558">施羅德環球基金系列 - 亞洲優勢基金(美元)A-累積</a></td><td class="num">72.5</td><td class="num">60</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>分批單筆</td></tr><tr><td class="num">24</td><td><a href="#fund-ABEMVIUSD">聯博-新興市場價值基金I股美元</a></td><td class="num">72.3</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">25</td><td><a href="#fund-AIA">瀚亞投資-亞洲股票收益基金A(美元</a></td><td class="num">72.3</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">26</td><td><a href="#fund-IE00BMPRXN33">路博邁投資基金 - NB次世代通訊基金A累積類股(美元)</a></td><td class="num">72.1</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">27</td><td><a href="#fund-LU0133713346">施羅德環球基金系列 - 亞洲優勢基金(美元)A1-累積</a></td><td class="num">71.9</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">28</td><td><a href="#fund-ABEMGS1USD">聯博-新興市場成長基金S1股美元</a></td><td class="num">71.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">29</td><td><a href="#fund-ABEMGIUSD">聯博-新興市場成長基金 I股美元</a></td><td class="num">71.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">30</td><td><a href="#fund-LU0048388663">施羅德環球基金系列 - 亞洲優勢基金(美元)A-年配浮動(基金之配息來源可能為本金)</a></td><td class="num">71.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">31</td><td><a href="#fund-ABEMVAUSD">聯博-新興市場價值基金A股美元</a></td><td class="num">71.1</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">32</td><td><a href="#fund-IE000ZUB0R86">路博邁投資基金 - NB次世代通訊基金E累積類股(美元)</a></td><td class="num">70.9</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">33</td><td><a href="#fund-HEN17">駿利亨德森遠見基金-日本小型公司基金 A2 美元避險</a></td><td class="num">70.8</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">34</td><td><a href="#fund-LU0256331488">施羅德環球基金系列－環球能源(美元)A-累積</a></td><td class="num">70.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">35</td><td><a href="#fund-ABEMGAUSD">聯博-新興市場成長基金 A股美元</a></td><td class="num">70.1</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">36</td><td><a href="#fund-LU0943300847">施羅德環球基金系列－日本優勢(美元避險)A1-累積</a></td><td class="num">69.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">37</td><td><a href="#fund-LU1934327278">景順日本股票優勢基金 C(美元對沖)股 美元</a></td><td class="num">69.3</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">38</td><td><a href="#fund-AGIF-JPU">安聯日本股票基金- AT累積類股(美元避險)</a></td><td class="num">68.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">39</td><td><a href="#fund-LU0960981545">法巴日本股票基金 H (美元)</a></td><td class="num">68.3</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">40</td><td><a href="#fund-LU1934327195">景順日本股票優勢基金A(美元對沖)股 美元</a></td><td class="num">68.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">41</td><td><a href="#fund-LU1775982249">景順新興市場(不含中國)股票基金C-年配息股 美元</a></td><td class="num">68.0</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">42</td><td><a href="#fund-LU1775963454">景順新興市場(不含中國)股票基金A-年配息股 美元</a></td><td class="num">67.9</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">43</td><td><a href="#fund-0358">富蘭克林坦伯頓全球投資系列-東歐基金美元A (acc)股</a></td><td class="num">67.8</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">44</td><td><a href="#fund-ABAXJS1USD">聯博-亞洲股票基金S1股美元</a></td><td class="num">67.8</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">45</td><td><a href="#fund-ABAXJIUSD">聯博-亞洲股票基金I股美元</a></td><td class="num">67.6</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">46</td><td><a href="#fund-ABGVPS1USD">聯博-全球價值型基金S1股美元</a></td><td class="num">67.6</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">47</td><td><a href="#fund-ABGVPIUSD">聯博-全球價值型基金I股美元</a></td><td class="num">67.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">48</td><td><a href="#fund-LU0950372671">法巴日本小型股票基金 H (美元)</a></td><td class="num">66.9</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">49</td><td><a href="#fund-ABEMGADUSD">聯博-新興市場成長基金AD月配級別美元(基金之配息來源可能為本金)</a></td><td class="num">66.9</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">50</td><td><a href="#fund-LU0256332296">施羅德環球基金系列－環球能源(美元)A1-累積</a></td><td class="num">66.8</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr></tbody>
+<tbody><tr><td class="num">1</td><td><a href="#fund-JDF">瀚亞投資-日本動力股票基金A (美元避險)</a></td><td class="num">100.0</td><td class="num">88</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">2</td><td><a href="#fund-0796">富蘭克林坦伯頓全球投資系列-生技領航基金美元A(acc)股</a></td><td class="num">96.9</td><td class="num">78</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>定期定額</td></tr><tr><td class="num">3</td><td><a href="#fund-1962">富蘭克林坦伯頓全球投資系列-生技領航基金美元F(acc)股</a></td><td class="num">95.5</td><td class="num">80</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>定期定額</td></tr><tr><td class="num">4</td><td><a href="#fund-JDA">瀚亞投資-日本動力股票基金A (美元)</a></td><td class="num">90.8</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">5</td><td><a href="#fund-LU0112497440">百達-生物科技-R 美元</a></td><td class="num">82.6</td><td class="num">60</td><td><span class="rating r-中立觀望">中立觀望</span></td><td><span class="sent-u">Neutral</span></td><td>觀望</td></tr><tr><td class="num">6</td><td><a href="#fund-ABITFSUSD">聯博-國際科技基金S級別美元</a></td><td class="num">81.8</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">7</td><td><a href="#fund-ABITFS1USD">聯博-國際科技基金S1股美元</a></td><td class="num">80.7</td><td class="num">80</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">8</td><td><a href="#fund-ABITFIUSD">聯博-國際科技基金 I股美元</a></td><td class="num">80.5</td><td class="num">80</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>分批單筆</td></tr><tr><td class="num">9</td><td><a href="#fund-ABITFAUSD">聯博-國際科技基金 A股美元</a></td><td class="num">79.5</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">10</td><td><a href="#fund-ABITFEUSD">聯博-國際科技基金E級別美元</a></td><td class="num">78.2</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">11</td><td><a href="#fund-0805">富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (Ydis)股</a></td><td class="num">78.1</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">12</td><td><a href="#fund-0786">富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (acc)股</a></td><td class="num">78.0</td><td class="num">80</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">13</td><td><a href="#fund-IE0000838189">霸菱韓國基金-A類美元累積型</a></td><td class="num">77.1</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">14</td><td><a href="#fund-2204">富蘭克林坦伯頓全球投資系列-亞洲成長基金美元F(acc)股</a></td><td class="num">76.8</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">15</td><td><a href="#fund-0785">富蘭克林坦伯頓全球投資系列-新興國家基金美元A (acc)股</a></td><td class="num">76.0</td><td class="num">80</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>定期定額</td></tr><tr><td class="num">16</td><td><a href="#fund-0806">富蘭克林坦伯頓全球投資系列-新興國家基金美元A (Ydis)股</a></td><td class="num">75.6</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">17</td><td><a href="#fund-AEJEPIH">安本基金 - 日本永續股票基金  I 累積 美元避險</a></td><td class="num">75.4</td><td class="num">90</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">18</td><td><a href="#fund-AF24XU">安本基金 - 日本永續股票基金 X 累積 美元避險</a></td><td class="num">75.3</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">19</td><td><a href="#fund-JFPATT">摩根太平洋科技基金 - 摩根太平洋科技(美元)(累計)</a></td><td class="num">74.5</td><td class="num">90</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">20</td><td><a href="#fund-AEJEPH">安本基金 - 日本永續股票基金 A 累積 美元避險</a></td><td class="num">74.4</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">21</td><td><a href="#fund-ABEMVSUSD">聯博-新興市場價值基金S級別美元</a></td><td class="num">73.6</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">22</td><td><a href="#fund-ABEMVS1USD">聯博-新興市場價值基金S1股美元</a></td><td class="num">72.5</td><td class="num">80</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">23</td><td><a href="#fund-LU0106259558">施羅德環球基金系列 - 亞洲優勢基金(美元)A-累積</a></td><td class="num">72.5</td><td class="num">80</td><td><span class="rating r-值得關注">值得關注</span></td><td><span class="sent-u">Neutral</span></td><td>定期定額</td></tr><tr><td class="num">24</td><td><a href="#fund-ABEMVIUSD">聯博-新興市場價值基金I股美元</a></td><td class="num">72.3</td><td class="num">88</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">25</td><td><a href="#fund-AIA">瀚亞投資-亞洲股票收益基金A(美元</a></td><td class="num">72.3</td><td class="num">85</td><td><span class="rating r-強力推薦">強力推薦</span></td><td><span class="sent-p">Positive</span></td><td>定期定額</td></tr><tr><td class="num">26</td><td><a href="#fund-IE00BMPRXN33">路博邁投資基金 - NB次世代通訊基金A累積類股(美元)</a></td><td class="num">72.1</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">27</td><td><a href="#fund-LU0133713346">施羅德環球基金系列 - 亞洲優勢基金(美元)A1-累積</a></td><td class="num">71.9</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">28</td><td><a href="#fund-ABEMGS1USD">聯博-新興市場成長基金S1股美元</a></td><td class="num">71.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">29</td><td><a href="#fund-ABEMGIUSD">聯博-新興市場成長基金 I股美元</a></td><td class="num">71.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">30</td><td><a href="#fund-LU0048388663">施羅德環球基金系列 - 亞洲優勢基金(美元)A-年配浮動(基金之配息來源可能為本金)</a></td><td class="num">71.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">31</td><td><a href="#fund-ABEMVAUSD">聯博-新興市場價值基金A股美元</a></td><td class="num">71.1</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">32</td><td><a href="#fund-IE000ZUB0R86">路博邁投資基金 - NB次世代通訊基金E累積類股(美元)</a></td><td class="num">70.9</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">33</td><td><a href="#fund-0358">富蘭克林坦伯頓全球投資系列-東歐基金美元A (acc)股</a></td><td class="num">70.8</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">34</td><td><a href="#fund-LU0256331488">施羅德環球基金系列－環球能源(美元)A-累積</a></td><td class="num">70.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">35</td><td><a href="#fund-ABEMGAUSD">聯博-新興市場成長基金 A股美元</a></td><td class="num">70.1</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">36</td><td><a href="#fund-2108">富蘭克林坦伯頓全球投資系列-全球氣候變遷基金美元避險A(acc)股-H1</a></td><td class="num">69.5</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">37</td><td><a href="#fund-LU0943300847">施羅德環球基金系列－日本優勢(美元避險)A1-累積</a></td><td class="num">69.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">38</td><td><a href="#fund-LU1934327278">景順日本股票優勢基金 C(美元對沖)股 美元</a></td><td class="num">69.3</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">39</td><td><a href="#fund-EMEAAU">摩根基金 - 全方位新興市場基金 - JPM 全方位新興市場（美元） - A股(累計)</a></td><td class="num">69.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">40</td><td><a href="#fund-EMEF">摩根基金 - 全方位新興市場基金 - JPM全方位新興市場(美元) - A股(分派)(本基金之配息來源可能為本金)</a></td><td class="num">68.8</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">41</td><td><a href="#fund-AGIF-JPU">安聯日本股票基金- AT累積類股(美元避險)</a></td><td class="num">68.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">42</td><td><a href="#fund-1805">富蘭克林坦伯頓全球投資系列-日本基金美元避險A(acc)股-H1</a></td><td class="num">68.4</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">43</td><td><a href="#fund-LU0960981545">法巴日本股票基金 H (美元)</a></td><td class="num">68.3</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">44</td><td><a href="#fund-LU1934327195">景順日本股票優勢基金A(美元對沖)股 美元</a></td><td class="num">68.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">45</td><td><a href="#fund-0419">富蘭克林坦伯頓全球投資系列-天然資源基金美元A(acc)股</a></td><td class="num">68.2</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">46</td><td><a href="#fund-LU1775982249">景順新興市場(不含中國)股票基金C-年配息股 美元</a></td><td class="num">68.0</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">47</td><td><a href="#fund-LU1775963454">景順新興市場(不含中國)股票基金A-年配息股 美元</a></td><td class="num">67.9</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">48</td><td><a href="#fund-HEN17">駿利亨德森遠見基金-日本小型公司基金 A2 美元避險</a></td><td class="num">67.8</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">49</td><td><a href="#fund-ABAXJS1USD">聯博-亞洲股票基金S1股美元</a></td><td class="num">67.8</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr><tr><td class="num">50</td><td><a href="#fund-ABAXJIUSD">聯博-亞洲股票基金I股美元</a></td><td class="num">67.6</td><td class="num">—</td><td>—</td><td><span class="sent-u">—</span></td><td>—</td></tr></tbody>
 </table></div>
 </details>
 
-<h2>個案深度解讀（前 21 名）</h2>
+<h2>個案深度解讀（前 25 名）</h2>
 <details id="fund-JDF">
 <summary><span class="g">#1</span>瀚亞投資-日本動力股票基金A (美元避險)
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 90 · 初評分 100.0</span></summary>
+　<span class="num">深度分數 88 · 初評分 100.0</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 62.519000（2026/07/30）<br>
@@ -136,56 +152,56 @@ font-size:12px;color:var(--mut)}
 通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-考量中長期累積漲幅較大，採用定期定額方式可持續參與日本股市動態，並有效分散高檔震盪風險。</div>
+鑑於基金過往績效強勁但短期累積漲幅顯著，採用定期定額能分散高檔進場風險並參與日股長期升勢。</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>過濾多筆非相關基金雜訊後，市場關注焦點集中於該基金之淨值與基本總覽。</li><li>基金中短期動能充沛，近 3 個月報酬率達 16.98%，近 6 個月報酬率達 26.34%。</li><li>長期績效極為亮眼，1 年期報酬率為 63.54%，3 年期累積報酬高達 230.35%。</li></ul>
-<h4>評分理由</h4>中長期與近期績效表現極為強勁，展現卓越成長動能，且具備多家大型銷售通路支持。</div>
-<div class="blk"><h4>優勢</h4><ul><li>中長期績效卓越，3 年報酬率高達 230.35%，近 1 年達 63.54%。</li><li>銷售通路涵蓋元大證券、匯豐銀行與渣打銀行等大型金融機構，申購便利。</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>過去漲幅龐大，淨值處於相對高檔，短期可能面臨回檔修正風險。</li><li>輸入資料缺乏具體持股明細與最新總體經濟利多新聞佐證。</li></ul></div>
+<li>瀚亞投資境外基金召開年度股東常會，維持例行運作與健全治理。</li><li>投資社群平台 CMoney 對於瀚亞投資-日本動力股票基金A(美元避險)淨值與總覽維持持續關注。</li><li>基金中長期績效表現強勁，展現日本股市與美元避險策略的強勁動能。</li></ul>
+<h4>評分理由</h4>中長線表現極佳（3年報酬率達230.35%），美元避險機制降低匯率風險，惟短線累積漲幅較大需關注拉回風險。</div>
+<div class="blk"><h4>優勢</h4><ul><li>中長期績效極為亮眼，近1年報酬率63.54%、近3年達230.35%</li><li>採美元避險機制，可有效減緩日圓貶值對美元計價投資人的資產侵蝕</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>近3個月報酬達16.98%，短期內可能面臨高檔震盪或獲利結利賣壓</li><li>近1個月績效數據未提供(N/A)，需密切留意近期極短期動能變化</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-0796">
 <summary><span class="g">#2</span>富蘭克林坦伯頓全球投資系列-生技領航基金美元A(acc)股
-　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 92 · 初評分 93.9</span></summary>
+　<span class="rating r-值得關注">值得關注</span>
+　<span class="num">深度分數 78 · 初評分 96.9</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 70.420000（2026/07/30）<br>
 期間報酬：1月 18.71%　3月 13.95%　6月 18.65%　1年 73.19%　2年 106.09%　3年 72.13%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
-<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
+<div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資生技領域基金，定期定額可以降低時間風險</div>
+基金近1個月漲幅顯著（18.71%），鑑於生技產業波動度較高且短期急漲，建議採取定期定額方式分批佈局以平攤潛在波動風險。</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>富蘭克林坦伯頓全球投資系列基金近期有多檔基金被報導</li><li>報導內容多為基金總覽，少有直接評論富蘭克林坦伯頓全球投資系列-生技領航基金</li><li>生技領航基金的投資表現近期來看相當亮眼，尤其是1年和2年的報酬率</li></ul>
-<h4>評分理由</h4>基金近期報酬率優異，生技領域投資前景看好</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期投資報酬率高</li><li>生技領域長期投資前景廣闊</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動可能影響基金淨值</li><li>生技領域投資風險較高</li></ul></div>
+<li>提供之新聞資料多為富蘭克林坦伯頓旗下天然資源、潛力歐洲及日本等其他系列基金之總覽與上架資訊。</li><li>缺乏直接針對生技領航基金或生技醫療產業之專屬報導與相關總經動態。</li><li>富蘭克林坦伯頓全球投資系列產品線整體於銷售平台上維持一定曝光與產品更新。</li></ul>
+<h4>評分理由</h4>基金中長期績效表現極佳（1年報酬率高達73.19%），惟提供數據中缺乏針對生技產業之專屬新聞與總經動態支持，綜合考量後給予78分。</div>
+<div class="blk"><h4>優勢</h4><ul><li>中長期績效極為亮眼，1年報酬率達73.19%、2年報酬率達106.09%</li><li>短期成長動能強勁，近1個月與6個月報酬率均突破18%</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>缺少針對該基金及生技產業之具體最新新聞與市場情緒數據</li><li>短期急漲後可能面臨生技類股高波動與高檔修正風險</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-1962">
 <summary><span class="g">#3</span>富蘭克林坦伯頓全球投資系列-生技領航基金美元F(acc)股
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 80 · 初評分 92.5</span></summary>
+　<span class="num">深度分數 80 · 初評分 95.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 21.780000（2026/07/30）<br>
 期間報酬：1月 18.05%　3月 13.67%　6月 18.05%　1年 71.50%　2年 100.00%　3年 63.76%<br>
 通路：渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
-<h4>購入模式</h4>分批單筆<br>
-考慮到基金近期的優異表現，但市場新聞未直接關注此基金，採取分批單筆投資策略</div>
+<h4>購入模式</h4>定期定額<br>
+基金短期漲幅較大且生技產業屬高波動類型，採取定期定額能有效分散高檔追高風險並平滑買進成本。</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>富蘭克林坦伯頓全球投資系列基金家族近期有多檔基金被媒體報導</li><li>報導內容涵蓋不同基金的總覽和投資策略</li><li>但並未直接提及生技領航基金的最新表現或投資機會</li></ul>
-<h4>評分理由</h4>基金近期期間報酬率表現優異，但相關新聞未直接提及生技領航基金</div>
-<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率優異，顯示基金管理團隊的投資能力</li><li>生技領域長期成長潛力大，基金有機會受益</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場新聞未直接關注此基金，可能影響投資者信心</li><li>生技領域投資風險較高，基金價值可能會波動</li></ul></div>
+<li>提供的相關新聞均為富蘭克林坦伯頓旗下其他子基金（如歐洲、天然資源、日本及公司債等）之資訊，缺乏本生技基金之直接新聞。</li><li>富蘭克林坦伯頓系列基金持續在銷售平台上架與更新總覽，顯示發行機構產品線持續運作。</li><li>本次提供數據中無直接針對生技產業之總體經濟或政策動態報導。</li></ul>
+<h4>評分理由</h4>歷史與近期報酬率表現極為出色（1年71.50%），但缺乏直接產業新聞支撐且生技產業波動較高，綜合評估給予80分。</div>
+<div class="blk"><h4>優勢</h4><ul><li>中長期績效極為優異，1年報酬率達71.50%、2年報酬率高達100.00%。</li><li>近期展現強勁向上動能，1個月及6個月報酬率均達18.05%。</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>單一產業型基金波動度較大，短期急漲後存在回檔修正之潛在風險。</li><li>數據中欠缺生技產業基本面與最新政策利多之直接新聞資訊。</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-JDA">
 <summary><span class="g">#4</span>瀚亞投資-日本動力股票基金A (美元)
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 90.8</span></summary>
+　<span class="num">深度分數 88 · 初評分 90.8</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 35.939000（2026/07/30）<br>
@@ -193,37 +209,37 @@ font-size:12px;color:var(--mut)}
 通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-基金近期表現良好，市場趨勢利多，適合定期定額投資</div>
+基金近期表現穩健，值得長期投資</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>瀚亞投資-日本動力股票基金A(美元)相關新聞較少，但瀚亞投資其他基金的新聞較多，可能代表市場對瀚亞投資的基金有較高的關注度</li><li>近期市場趨勢利多，日本股票市場表現良好</li><li>基金淨值與總覽的新聞報導可能代表市場對基金的關注度增加</li></ul>
-<h4>評分理由</h4>基金近期淨值走勢良好，總體經濟與產業風向利多</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期淨值走勢良好</li><li>總體經濟與產業風向利多</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>基金管理風險</li></ul></div>
+<li>瀚亞投資境外基金召開年度股東常會</li><li>瀚亞投資-日本動力股票基金A(美元避險) 淨值與總覽</li><li>瀚亞投資相關基金的總覽與介紹</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，尤其6月和1年報酬率分別為20.43%和49.55%</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率優異</li><li>瀚亞投資的基金管理經驗豐富</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>基金投資風格可能不適合所有投資者</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-LU0112497440">
 <summary><span class="g">#5</span>百達-生物科技-R 美元
-　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 80 · 初評分 82.6</span></summary>
+　<span class="rating r-中立觀望">中立觀望</span>
+　<span class="num">深度分數 60 · 初評分 82.6</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 1,287.090000（2026/07/30）<br>
 期間報酬：1月 14.28%　3月 13.21%　6月 14.55%　1年 62.88%　2年 85.89%　3年 50.81%<br>
 通路：匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
-<h4>購入模式</h4>定期定額<br>
-長期投資策略，減少短期市場波動的影響</div>
+<h4>購入模式</h4>觀望<br>
+由於缺乏直接相關的正面新聞，且市場情緒中立，建議觀望</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>百達相關基金的新聞多為其他基金的表現，缺乏直接關於百達-生物科技-R 美元的消息</li><li>市場上有關百達基金的討論，主要集中在其他基金的表現</li><li>近期沒有直接關於百達-生物科技-R 美元的重大新聞</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現良好，但相關新聞缺乏直接關於該基金的信息</div>
-<div class="blk"><h4>優勢</h4><ul><li>近期報酬率表現良好，顯示基金管理團隊的能力</li><li>生物科技業是未來發展的重要領域，具有長期增長潛力</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>缺乏直接關於該基金的市場新聞和分析</li><li>生物科技業的發展可能會受到政策和市場波動的影響</li></ul></div>
+<li>相關新聞中沒有直接提到百達-生物科技-R 美元基金</li><li>百達基金系列的其他基金如百達-水資源-R 美元、百達-亞洲股票(不含日本)-R美元有被提及</li><li>百達-KY(2236)股價出現跌停</li></ul>
+<h4>評分理由</h4>基金近期報酬率表現良好，但相關新聞中缺乏直接關於百達-生物科技-R 美元的正面消息</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率表現良好</li><li>生物科技業可能具有長期成長潛力</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>缺乏直接關於百達-生物科技-R 美元的正面新聞</li><li>市場情緒中立，可能影響基金表現</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-ABITFSUSD">
 <summary><span class="g">#6</span>聯博-國際科技基金S級別美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 80 · 初評分 81.8</span></summary>
+　<span class="num">深度分數 88 · 初評分 81.8</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 175.090000（2026/07/30）<br>
@@ -231,18 +247,18 @@ font-size:12px;color:var(--mut)}
 通路：元大證券</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-基金近期表現優異，采用定期定額策略可以降低時機風險</div>
+基金近期表現優異，且市場情緒正面，適合定期定額投資</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>聯博基金系列產品在近期市場中引起關注</li><li>聯博全球非投資等級債券基金在震盪市場中表現出色</li><li>聯博基金的多元化產品線為投資者提供了多樣的選擇</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現優異，且聯博基金系列產品在市場中引起關注</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異</li><li>聯博基金系列產品多元化</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場震盪風險</li><li>基金過去一年報酬率波動較大</li></ul></div>
+<li>聯博基金家族多只基金近期有相關新聞報導</li><li>聯博-新興市場成長基金自2026年1月28日起接受新申購及轉入</li><li>聯博全球非投資等級債券基金在震盪市場中吸引目光</li></ul>
+<h4>評分理由</h4>基金近期期間報酬率表現優異，且相關新聞顯示聯博基金家族有多只基金受到關注</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期期間報酬率表現優異</li><li>聯博基金家族有多只基金受到關注，顯示基金公司的實力</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>基金投資風險較高，可能會受到市場波動的影響</li><li>基金的淨值可能會因為市場波動而波動</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-ABITFS1USD">
 <summary><span class="g">#7</span>聯博-國際科技基金S1股美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 80.7</span></summary>
+　<span class="num">深度分數 80 · 初評分 80.7</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 902.920000（2026/07/30）<br>
@@ -250,31 +266,31 @@ font-size:12px;color:var(--mut)}
 通路：元大證券</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資科技基金，定期定額可以降低時間成本和風險</div>
+由於基金近期表現良好，且市場情緒正面，建議採用定期定額投資策略</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>聯博基金系列產品近期受到關注</li><li>全球非投資等級債券基金表現穩健</li><li>國際科技基金未在新聞中被直接提及</li></ul>
-<h4>評分理由</h4>近期報酬率表現優異，尤其1年和2年報酬率高達47.24%和133.43%</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率優異</li><li>科技業長期成長潛力大</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動可能影響基金淨值</li><li>科技業政策風險</li></ul></div>
+<li>聯博-新興市場成長基金恢復新申購及轉入</li><li>聯博全球非投資等級債券基金受到關注</li><li>聯博亞洲股票基金及美國價值基金的總覽</li></ul>
+<h4>評分理由</h4>基金近期期間報酬率表現優異，且相關新聞顯示聯博基金受到市場關注</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率表現優異</li><li>聯博基金品牌受到市場關注</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>基金投資風險</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-ABITFIUSD">
 <summary><span class="g">#8</span>聯博-國際科技基金 I股美元
-　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 80.5</span></summary>
+　<span class="rating r-值得關注">值得關注</span>
+　<span class="num">深度分數 80 · 初評分 80.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 1,871.780000（2026/07/30）<br>
 期間報酬：1月 24.97%　3月 2.14%　6月 19.73%　1年 46.94%　2年 131.85%　3年 95.27%<br>
 通路：元大證券</div>
-<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
-<h4>購入模式</h4>定期定額<br>
-長期投資策略，降低時間和市場波動的風險</div>
+<div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
+<h4>購入模式</h4>分批單筆<br>
+考慮到基金的近期表現和市場的中立情緒，採取分批單筆的投資策略</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>聯博基金系列產品在近期市場中引起關注</li><li>聯博全球非投資等級債券基金在震盪市場中表現出色</li><li>聯博基金的多元化產品線包括亞洲股票基金、美國價值基金等</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現優異，尤其在1年和2年期間報酬率達46.94%和131.85%</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異</li><li>聯博基金的多元化產品線能夠滿足不同投資者的需求</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動可能對基金淨值產生影響</li><li>投資境外基金需要考慮匯率風險</li></ul></div>
+<li>聯博-新興市場成長基金恢復新申購及轉入</li><li>聯博全球非投資等級債券基金受到關注</li><li>聯博亞洲股票基金及美國價值基金的總覽被刊登</li></ul>
+<h4>評分理由</h4>基金近期報酬率表現優異，但相關新聞中缺乏直接關於聯博-國際科技基金的內容</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期報酬率表現優異</li><li>聯博基金管理團隊的經驗和專業</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>缺乏直接關於聯博-國際科技基金的新聞和分析</li><li>市場的波動性和不確定性</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-ABITFAUSD">
@@ -288,12 +304,12 @@ font-size:12px;color:var(--mut)}
 通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-基於基金近期表現優異和市場情緒正面，建議採取定期定額投資策略</div>
+長期投資科技基金，定期定額可以降低時間成本並平均投資風險</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>聯博基金系列產品在近期市場中吸引目光</li><li>聯博全球非投資等級債券基金在震盪市場中表現出色</li><li>聯博亞洲股票基金和美國價值基金的總覽也被刊登</li></ul>
-<h4>評分理由</h4>基金近期期間報酬率表現優異，且相關新聞顯示聯博基金系列產品受到市場關注</div>
-<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率表現優異</li><li>聯博基金系列產品受到市場關注</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>基金投資風險</li></ul></div>
+<li>聯博-新興市場成長基金恢復新申購及轉入</li><li>聯博全球非投資等級債券基金受到關注</li><li>聯博亞洲股票基金及美國價值基金的基金總覽被刊登</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，尤其1年及2年報酬率分別達45.77%及126.36%</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異</li><li>科技產業長期成長潛力大</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>科技基金波動性較高</li><li>全球經濟變動可能影響基金表現</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-ABITFEUSD">
@@ -307,37 +323,18 @@ font-size:12px;color:var(--mut)}
 通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資科技基金，分批投入可以降低風險</div>
+長期投資觀點下，科技基金的成長潛力大，定期定額可以降低時機風險</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>聯博基金系列產品近期受到市場關注</li><li>全球非投資等級債券基金和亞洲股票基金等相關新聞</li><li>市場震盪中，投資者尋求多元化投資機會</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現優異，市場對科技基金的關注度提高</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異，尤其在1年和2年期內</li><li>科技基金長期增長潛力大，具有抗通膨能力</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險，科技基金可能會受到經濟衰退影響</li><li>基金管理風險，管理團隊的表現會影響基金的收益</li></ul></div>
-</div>
-<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
-</div></details><details id="fund-AEJEPIH">
-<summary><span class="g">#11</span>安本基金 - 日本永續股票基金  I 累積 美元避險
-　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 75.4</span></summary>
-<div class="f-body">
-<div class="col">
-<div class="blk"><h4>淨值資訊</h4>淨值 48.664700（2026/07/30）<br>
-期間報酬：1月 21.90%　3月 7.19%　6月 17.13%　1年 48.22%　2年 115.31%　3年 148.92%<br>
-通路：元大證券、匯豐銀行、渣打銀行</div>
-<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
-<h4>購入模式</h4>定期定額<br>
-基金近期報酬率表現優異，且市場對安本基金的關注度較高，適合定期定額投資</div>
-<div class="blk"><h4>新聞摘要</h4><ul>
-<li>安本基金旗下多個基金的新聞與總覽</li><li>安本基金 - 日本永續股票基金相關新聞較少，但安本基金其他基金的新聞較多</li><li>市場對安本基金的關注度較高</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現優異，且市場對安本基金的關注度較高</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異</li><li>市場對安本基金的關注度較高</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>安本基金 - 日本永續股票基金相關新聞較少</li><li>市場波動風險</li></ul></div>
+<li>聯博-新興市場成長基金恢復新申購及轉入</li><li>聯博全球非投資等級債券基金受到關注</li><li>聯博亞洲股票基金及美國價值基金的基金總覽被刊登</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，尤其1年及2年報酬率高達44.33%及119.71%</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率優異，顯示投資團隊的實力</li><li>科技業的長期成長潛力大，對基金有正面影響</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>科技業波動性高，可能面臨短期調整風險</li><li>全球經濟變數多，可能影響基金的整體表現</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-0805">
-<summary><span class="g">#13</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (Ydis)股
+<summary><span class="g">#11</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (Ydis)股
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 75.1</span></summary>
+　<span class="num">深度分數 85 · 初評分 78.1</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 53.540000（2026/07/30）<br>
@@ -345,18 +342,18 @@ font-size:12px;color:var(--mut)}
 通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資亞洲成長基金，平均成本和風險</div>
+長期投資亞洲成長基金，定期定額可以降低時機風險</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (acc)股 的總覽</li><li>富蘭克林坦伯頓全球投資系列-亞洲小型企業基金美元A(Ydis)股 的總覽</li><li>富蘭克林坦伯頓全球投資系列相關基金的總覽和新聞</li></ul>
-<h4>評分理由</h4>基金近期期間報酬率表現優異，亞洲成長基金的投資前景看好</div>
-<div class="blk"><h4>優勢</h4><ul><li>亞洲成長基金的投資前景看好</li><li>基金近期期間報酬率表現優異</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>投資亞洲市場的政治和經濟風險</li></ul></div>
+<li>富蘭克林坦伯頓全球投資系列新增上架多個基金</li><li>該基金系列多個基金的總覽被多家媒體報導</li><li>亞洲小型企業基金和日本基金等相關基金的新聞</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，且基金系列多個基金被媒體報導</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率表現優異</li><li>基金系列多個基金被媒體報導，增加了知名度和可信度</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>亞洲經濟變動風險</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-0786">
-<summary><span class="g">#14</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (acc)股
+<summary><span class="g">#12</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (acc)股
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 75.0</span></summary>
+　<span class="num">深度分數 80 · 初評分 78.0</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 58.940000（2026/07/30）<br>
@@ -364,16 +361,130 @@ font-size:12px;color:var(--mut)}
 通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資，平均成本，降低波動風險</div>
+基金近期報酬率表現良好，且富蘭克林坦伯頓全球投資系列的多個基金被新增上架和關注，適合定期定額投資</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A (acc)股的總覽</li><li>富蘭克林坦伯頓全球投資系列相關基金的新聞</li><li>亞洲市場投資機會</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現優異，亞洲市場成長潛力大</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金經理團隊經驗豐富</li><li>亞洲市場成長潛力大</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>經濟變數影響基金表現</li></ul></div>
+<li>富蘭克林坦伯頓全球投資系列新增上架多個基金</li><li>富蘭克林坦伯頓全球投資系列多個基金的總覽被發佈</li><li>富蘭克林坦伯頓全球投資系列的基金獲得關注</li></ul>
+<h4>評分理由</h4>基金近期報酬率表現良好，且富蘭克林坦伯頓全球投資系列的多個基金被新增上架和關注</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現良好</li><li>富蘭克林坦伯頓全球投資系列的多個基金被新增上架和關注</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>基金管理風險</li></ul></div>
+</div>
+<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
+</div></details><details id="fund-IE0000838189">
+<summary><span class="g">#13</span>霸菱韓國基金-A類美元累積型
+　<span class="rating r-強力推薦">強力推薦</span>
+　<span class="num">深度分數 85 · 初評分 77.1</span></summary>
+<div class="f-body">
+<div class="col">
+<div class="blk"><h4>淨值資訊</h4>淨值 47.680000（2026/07/30）<br>
+期間報酬：1月 36.11%　3月 -14.67%　6月 6.07%　1年 74.72%　2年 108.94%　3年 50.46%<br>
+通路：匯豐銀行、渣打銀行</div>
+<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
+<h4>購入模式</h4>定期定額<br>
+基金近期表現優異，值得長期投資</div>
+<div class="blk"><h4>新聞摘要</h4><ul>
+<li>霸菱韓國基金-A類美元累積型總覽</li><li>最新霸菱韓國基金-A類美元累積型推薦文章</li><li>基金近期表現優異</li></ul>
+<h4>評分理由</h4>總體經濟與產業風向、績效與風險表現均佳</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期表現優異</li><li>韓國市場潛力大</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>匯率變動風險</li></ul></div>
+</div>
+<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
+</div></details><details id="fund-2204">
+<summary><span class="g">#14</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元F(acc)股
+　<span class="rating r-強力推薦">強力推薦</span>
+　<span class="num">深度分數 85 · 初評分 76.8</span></summary>
+<div class="f-body">
+<div class="col">
+<div class="blk"><h4>淨值資訊</h4>淨值 15.980000（2026/07/30）<br>
+期間報酬：1月 24.65%　3月 6.96%　6月 14.06%　1年 40.79%　2年 60.76%　3年 25.93%<br>
+通路：渣打銀行</div>
+<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
+<h4>購入模式</h4>定期定額<br>
+基金近期表現穩健，且市場對該基金系列的關注度高，適合定期定額投資</div>
+<div class="blk"><h4>新聞摘要</h4><ul>
+<li>富蘭克林坦伯頓全球投資系列新增上架多個基金</li><li>該基金系列多個基金的總覽被多家媒體報導</li><li>相關基金的淨值與總覽被分享</li></ul>
+<h4>評分理由</h4>基金近期報酬率表現優異，且富蘭克林坦伯頓全球投資系列多個基金被媒體報導</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異</li><li>富蘭克林坦伯頓全球投資系列多個基金被媒體報導</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>基金管理風險</li></ul></div>
+</div>
+<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
+</div></details><details id="fund-0785">
+<summary><span class="g">#15</span>富蘭克林坦伯頓全球投資系列-新興國家基金美元A (acc)股
+　<span class="rating r-值得關注">值得關注</span>
+　<span class="num">深度分數 80 · 初評分 76.0</span></summary>
+<div class="f-body">
+<div class="col">
+<div class="blk"><h4>淨值資訊</h4>淨值 82.070000（2026/07/30）<br>
+期間報酬：1月 23.62%　3月 3.60%　6月 10.80%　1年 44.44%　2年 84.84%　3年 55.35%<br>
+通路：渣打銀行</div>
+<div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
+<h4>購入模式</h4>定期定額<br>
+長期投資新興國家基金，定期定額可以降低時機風險</div>
+<div class="blk"><h4>新聞摘要</h4><ul>
+<li>富蘭克林坦伯頓全球投資系列新增上架多個基金</li><li>富蘭克林坦伯頓全球投資系列各基金總覽</li><li>富蘭克林坦伯頓全球投資系列基金近期表現</li></ul>
+<h4>評分理由</h4>基金近期報酬率表現良好，但相關新聞並非直接關注新興國家基金</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現良好</li><li>富蘭克林坦伯頓全球投資系列品牌知名度高</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>新興國家基金投資風險較高</li><li>基金淨值波動可能較大</li></ul></div>
+</div>
+<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
+</div></details><details id="fund-0806">
+<summary><span class="g">#16</span>富蘭克林坦伯頓全球投資系列-新興國家基金美元A (Ydis)股
+　<span class="rating r-強力推薦">強力推薦</span>
+　<span class="num">深度分數 85 · 初評分 75.6</span></summary>
+<div class="f-body">
+<div class="col">
+<div class="blk"><h4>淨值資訊</h4>淨值 74.200000（2026/07/30）<br>
+期間報酬：1月 23.30%　3月 3.33%　6月 10.50%　1年 44.05%　2年 79.97%　3年 47.22%<br>
+通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
+<h4>購入模式</h4>定期定額<br>
+考慮到基金的長期表現和近期報酬率，定期定額投資可以幫助降低時機風險</div>
+<div class="blk"><h4>新聞摘要</h4><ul>
+<li>富蘭克林坦伯頓全球投資系列新增上架多個基金</li><li>該基金系列多個基金的總覽被多家媒體報導</li><li>無直接關於富蘭克林坦伯頓全球投資系列-新興國家基金美元A (Ydis)股的負面新聞</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，且無直接負面新聞</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率表現優異</li><li>基金系列多個基金被多家媒體報導，顯示其受關注度</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>新興國家基金可能面臨政治和經濟不穩定風險</li><li>美元計價可能受匯率波動影響</li></ul></div>
+</div>
+<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
+</div></details><details id="fund-AEJEPIH">
+<summary><span class="g">#17</span>安本基金 - 日本永續股票基金  I 累積 美元避險
+　<span class="rating r-強力推薦">強力推薦</span>
+　<span class="num">深度分數 90 · 初評分 75.4</span></summary>
+<div class="f-body">
+<div class="col">
+<div class="blk"><h4>淨值資訊</h4>淨值 48.664700（2026/07/30）<br>
+期間報酬：1月 21.90%　3月 7.19%　6月 17.13%　1年 48.22%　2年 115.31%　3年 148.92%<br>
+通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
+<h4>購入模式</h4>定期定額<br>
+由於基金近期表現優異，且市場情緒正面，建議採取定期定額投資策略以降低波動風險</div>
+<div class="blk"><h4>新聞摘要</h4><ul>
+<li>安本基金召開年度股東大會通知</li><li>安本基金-日本永續股票基金A累積美元避險的總覽</li><li>安本基金相關基金的買賣訊號和總覽</li></ul>
+<h4>評分理由</h4>基金近期期間報酬率表現優異，且相關新聞顯示基金公司積極召開股東大會，展現透明度和穩定性</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期期間報酬率表現優異</li><li>基金公司積極召開股東大會，展現透明度和穩定性</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>基金投資風險</li></ul></div>
+</div>
+<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
+</div></details><details id="fund-AF24XU">
+<summary><span class="g">#18</span>安本基金 - 日本永續股票基金 X 累積 美元避險
+　<span class="rating r-強力推薦">強力推薦</span>
+　<span class="num">深度分數 88 · 初評分 75.3</span></summary>
+<div class="f-body">
+<div class="col">
+<div class="blk"><h4>淨值資訊</h4>淨值 34.654200（2026/07/30）<br>
+期間報酬：1月 21.82%　3月 7.18%　6月 17.10%　1年 48.10%　2年 114.93%　3年 148.01%<br>
+通路：元大證券、匯豐銀行、渣打銀行</div>
+<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
+<h4>購入模式</h4>定期定額<br>
+基金近期表現優異，且日本永續股票市場前景看好，適合定期定額投資</div>
+<div class="blk"><h4>新聞摘要</h4><ul>
+<li>安本基金召開年度股東大會</li><li>安本基金日本永續股票基金A累積美元避險的總覽</li><li>安本基金相關基金的買賣訊號和總覽</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，且基金公司召開年度股東大會，顯示公司穩健運營</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率表現優異</li><li>日本永續股票市場前景看好</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>美元避險風險</li><li>市場波動風險</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-JFPATT">
-<summary><span class="g">#15</span>摩根太平洋科技基金 - 摩根太平洋科技(美元)(累計)
+<summary><span class="g">#19</span>摩根太平洋科技基金 - 摩根太平洋科技(美元)(累計)
 　<span class="rating r-強力推薦">強力推薦</span>
 　<span class="num">深度分數 90 · 初評分 74.5</span></summary>
 <div class="f-body">
@@ -383,56 +494,37 @@ font-size:12px;color:var(--mut)}
 通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資科技基金，平均成本效益佳</div>
+基金表現優異，市場情緒正面，適合定期定額投資</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
 <li>摩根太平洋科技基金近期表現優異</li><li>基金淨值穩步上升</li><li>市場對科技基金持續看好</li></ul>
-<h4>評分理由</h4>近期市場趨勢利多，基金淨值走勢穩定</div>
-<div class="blk"><h4>優勢</h4><ul><li>科技產業長期成長潛力大</li><li>基金經理團隊投資經驗豐富</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險高</li><li>科技產業政策變動風險</li></ul></div>
+<h4>評分理由</h4>基金近期報酬率高，市場對科技基金持續看好</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期報酬率高</li><li>市場對科技基金持續看好</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>科技基金風險較高</li><li>市場波動可能影響基金表現</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
-</div></details><details id="fund-IE0000838189">
-<summary><span class="g">#17</span>霸菱韓國基金-A類美元累積型
+</div></details><details id="fund-AEJEPH">
+<summary><span class="g">#20</span>安本基金 - 日本永續股票基金 A 累積 美元避險
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 88 · 初評分 74.1</span></summary>
+　<span class="num">深度分數 88 · 初評分 74.4</span></summary>
 <div class="f-body">
 <div class="col">
-<div class="blk"><h4>淨值資訊</h4>淨值 47.680000（2026/07/30）<br>
-期間報酬：1月 36.11%　3月 -14.67%　6月 6.07%　1年 74.72%　2年 108.94%　3年 50.46%<br>
-通路：匯豐銀行、渣打銀行</div>
+<div class="blk"><h4>淨值資訊</h4>淨值 41.585200（2026/07/30）<br>
+期間報酬：1月 21.33%　3月 6.97%　6月 16.66%　1年 47.04%　2年 110.21%　3年 138.94%<br>
+通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資韓國市場的潛力，適合定期定額投資</div>
+由於基金近期表現穩健，且日本永續股票市場前景看好，適合採取定期定額投資策略</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>霸菱韓國基金-A類美元累積型近期表現亮眼</li><li>基金收益率在1年和2年期內表現優異</li><li>投資韓國市場的機會與挑戰並存</li></ul>
-<h4>評分理由</h4>基金近期收益率表現優異，特別是在1年和2年期內</div>
-<div class="blk"><h4>優勢</h4><ul><li>韓國市場長期成長潛力</li><li>基金管理團隊經驗豐富</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>匯率變動風險</li></ul></div>
-</div>
-<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
-</div></details><details id="fund-2204">
-<summary><span class="g">#18</span>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元F(acc)股
-　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 73.8</span></summary>
-<div class="f-body">
-<div class="col">
-<div class="blk"><h4>淨值資訊</h4>淨值 15.980000（2026/07/30）<br>
-期間報酬：1月 24.65%　3月 6.96%　6月 14.06%　1年 40.79%　2年 60.76%　3年 25.93%<br>
-通路：渣打銀行</div>
-<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
-<h4>購入模式</h4>定期定額<br>
-長期投資亞洲成長市場，定期定額可以降低時機風險</div>
-<div class="blk"><h4>新聞摘要</h4><ul>
-<li>富蘭克林坦伯頓全球投資系列-亞洲成長基金美元A(acc)股的總覽</li><li>富蘭克林坦伯頓全球投資系列-亞洲小型企業基金美元A(Ydis)股的總覽</li><li>富蘭克林坦伯頓全球投資系列相關基金的新聞</li></ul>
-<h4>評分理由</h4>近期期間報酬率表現優異，特別是1年和2年的報酬率</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異</li><li>亞洲成長市場具有長期增長潛力</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>投資亞洲市場可能面臨政治和經濟不確定性</li></ul></div>
+<li>安本基金召開年度股東大會通知</li><li>安本基金-日本永續股票基金A累積美元避險的總覽</li><li>安本基金相關基金的買賣訊號和總覽</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，尤其1年和2年報酬率分別達47.04%和110.21%</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率表現優異</li><li>日本永續股票市場前景看好</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>美元避險可能帶來匯率風險</li><li>基金投資風格可能不適合所有投資者</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-ABEMVSUSD">
-<summary><span class="g">#19</span>聯博-新興市場價值基金S級別美元
+<summary><span class="g">#21</span>聯博-新興市場價值基金S級別美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 73.6</span></summary>
+　<span class="num">深度分數 88 · 初評分 73.6</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 125.370000（2026/07/30）<br>
@@ -440,37 +532,18 @@ font-size:12px;color:var(--mut)}
 通路：元大證券</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資新興市場價值基金，能夠平均成本並降低市場波動風險</div>
+基於基金近期的優異表現和市場對聯博基金家族的關注，採取定期定額投資策略可以平滑投資風險</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>聯博基金系列產品受到市場關注</li><li>新興市場價值基金的投資機會</li><li>全球非投資等級債券基金在震盪市場中的表現</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現優異，尤其1年和2年期間報酬率分別為41.68%和76.06%</div>
-<div class="blk"><h4>優勢</h4><ul><li>長期投資新興市場的成長潛力</li><li>基金管理團隊的投資經驗</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>新興市場波動風險</li><li>全球經濟不確定性</li></ul></div>
-</div>
-<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
-</div></details><details id="fund-0785">
-<summary><span class="g">#20</span>富蘭克林坦伯頓全球投資系列-新興國家基金美元A (acc)股
-　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 80 · 初評分 73.0</span></summary>
-<div class="f-body">
-<div class="col">
-<div class="blk"><h4>淨值資訊</h4>淨值 82.070000（2026/07/30）<br>
-期間報酬：1月 23.62%　3月 3.60%　6月 10.80%　1年 44.44%　2年 84.84%　3年 55.35%<br>
-通路：渣打銀行</div>
-<div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
-<h4>購入模式</h4>定期定額<br>
-長期投資新興國家市場的成長潛力</div>
-<div class="blk"><h4>新聞摘要</h4><ul>
-<li>富蘭克林坦伯頓全球投資系列多個基金的總覽被報導</li><li>相關新聞未直接提及新興國家基金</li><li>市場資訊偏向基金家族的多元化投資選擇</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現良好，但相關新聞未直接提及新興國家基金</div>
-<div class="blk"><h4>優勢</h4><ul><li>新興國家市場長期成長潛力</li><li>基金家族多元化投資選擇</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>投資新興國家的政治與經濟不確定性</li></ul></div>
+<li>聯博-新興市場成長基金恢復新申購及轉入</li><li>聯博全球非投資等級債券基金在震盪市場中吸引目光</li><li>聯博基金家族多個基金的總覽被刊登</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，且相關新聞顯示聯博基金家族的多個基金受到關注</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率表現優異</li><li>聯博基金家族的多個基金受到市場關注</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>新興市場投資存在一定的政治和經濟風險</li><li>基金淨值可能因市場波動而波動</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-ABEMVS1USD">
 <summary><span class="g">#22</span>聯博-新興市場價值基金S1股美元
 　<span class="rating r-強力推薦">強力推薦</span>
-　<span class="num">深度分數 85 · 初評分 72.5</span></summary>
+　<span class="num">深度分數 80 · 初評分 72.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 102.640000（2026/07/30）<br>
@@ -478,31 +551,31 @@ font-size:12px;color:var(--mut)}
 通路：元大證券</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-透過定期定額投資可以降低時機風險，穩定投資新興市場價值基金</div>
+基金近期表現穩健，定期定額投資可以降低時機風險</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>聯博基金系列產品近期受到市場關注</li><li>新興市場價值基金的投資機會與挑戰</li><li>全球非投資等級債券基金的表現與分析</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現優異，且新興市場價值投資具有長期成長潛力</div>
-<div class="blk"><h4>優勢</h4><ul><li>新興市場價值投資具有長期成長潛力</li><li>基金近期報酬率表現優異</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>新興市場投資伴隨較高風險</li><li>全球經濟變數可能影響基金表現</li></ul></div>
+<li>聯博-新興市場成長基金恢復新申購及轉入</li><li>聯博全球非投資等級債券基金受到關注</li><li>聯博亞洲股票基金及美國價值基金的基金總覽被刊登</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，且相關基金受到市場關注</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期期間報酬率優異</li><li>基金管理團隊經驗豐富</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>新興市場投資風險較高</li><li>基金淨值波動可能較大</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-LU0106259558">
 <summary><span class="g">#23</span>施羅德環球基金系列 - 亞洲優勢基金(美元)A-累積
 　<span class="rating r-值得關注">值得關注</span>
-　<span class="num">深度分數 60 · 初評分 72.5</span></summary>
+　<span class="num">深度分數 80 · 初評分 72.5</span></summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 34.825300（2026/07/30）<br>
 期間報酬：1月 17.87%　3月 1.13%　6月 8.71%　1年 37.72%　2年 58.80%　3年 32.14%<br>
 通路：元大證券、匯豐銀行、渣打銀行</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-u">Neutral</span>
-<h4>購入模式</h4>分批單筆<br>
-考慮到基金近期報酬率表現良好，但市場情緒未有明顯利多，故採取分批單筆投資策略</div>
+<h4>購入模式</h4>定期定額<br>
+由於基金近期報酬率表現穩健，採取定期定額投資策略可以平滑投資成本和風險</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>施羅德環球基金系列多個基金的總覽被報導</li><li>基金系列涵蓋多個地區和投資策略</li><li>相關新聞未直接提及亞洲優勢基金</li></ul>
-<h4>評分理由</h4>基金近期報酬率表現良好，但相關新聞未直接提及亞洲優勢基金</div>
-<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現良好</li><li>投資於亞洲優勢股</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>相關新聞未直接提及亞洲優勢基金</li><li>市場情緒未有明顯利多</li></ul></div>
+<li>施羅德環球基金系列相關新聞多集中在不同基金的總覽和介紹</li><li>近期新聞中，日本優勢和環球能源基金的總覽被多次提及</li><li>相關基金系列的新聞整體呈現中立偏正面的情緒</li></ul>
+<h4>評分理由</h4>基金近期報酬率表現穩健，尤其1年和2年期的報酬率較高，但新聞中缺乏直接關於亞洲優勢基金的正面評價</div>
+<div class="blk"><h4>優勢</h4><ul><li>近期報酬率表現穩健</li><li>基金系列多樣，投資者可根據自身風險偏好選擇合適的基金</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>缺乏直接關於亞洲優勢基金的正面評價</li><li>市場整體情緒中立，可能影響基金短期表現</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details><details id="fund-ABEMVIUSD">
@@ -516,12 +589,31 @@ font-size:12px;color:var(--mut)}
 通路：元大證券</div>
 <div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
 <h4>購入模式</h4>定期定額<br>
-長期投資新興市場價值基金，分批投入可以降低時間風險</div>
+長期投資新興市場價值基金，定期定額可以降低時機風險</div>
 <div class="blk"><h4>新聞摘要</h4><ul>
-<li>聯博基金系列產品受到市場關注</li><li>新興市場價值基金的投資機會</li><li>全球非投資等級債券基金的表現</li></ul>
-<h4>評分理由</h4>近期期間報酬率表現優異，特別是1年和2年的報酬率</div>
-<div class="blk"><h4>優勢</h4><ul><li>長期投資新興市場的成長潛力</li><li>基金管理團隊的投資經驗</li></ul>
-<h4>劣勢 / 風險</h4><ul><li>新興市場波動風險</li><li>外匯風險對基金淨值的影響</li></ul></div>
+<li>聯博-新興市場成長基金恢復新申購及轉入</li><li>聯博全球非投資等級債券基金在震盪市場中吸引目光</li><li>聯博各基金產品持續受到市場關注</li></ul>
+<h4>評分理由</h4>近期期間報酬率表現優異，且基金公司各產品持續受到市場關注</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異，顯示投資團隊的實力</li><li>新興市場價值基金可以提供多元化的投資機會</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>新興市場投資存在較高的風險和波動性</li><li>基金淨值可能會受到美元匯率變動的影響</li></ul></div>
+</div>
+<div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
+</div></details><details id="fund-AIA">
+<summary><span class="g">#25</span>瀚亞投資-亞洲股票收益基金A(美元
+　<span class="rating r-強力推薦">強力推薦</span>
+　<span class="num">深度分數 85 · 初評分 72.3</span></summary>
+<div class="f-body">
+<div class="col">
+<div class="blk"><h4>淨值資訊</h4>淨值 21.567000（2026/07/30）<br>
+期間報酬：1月 18.57%　3月 1.56%　6月 7.87%　1年 37.24%　2年 70.72%　3年 43.60%<br>
+通路：元大證券、渣打銀行</div>
+<div class="blk"><h4>市場情緒</h4><span class="sent-p">Positive</span>
+<h4>購入模式</h4>定期定額<br>
+長期投資，穩定配置</div>
+<div class="blk"><h4>新聞摘要</h4><ul>
+<li>瀚亞投資境外基金召開年度股東常會</li><li>瀚亞投資相關基金的總覽被多家媒體報導</li><li>亞洲股票市場表現穩健，相關基金有望繼續成長</li></ul>
+<h4>評分理由</h4>基金近期報酬率表現優異，亞洲股票市場前景看好</div>
+<div class="blk"><h4>優勢</h4><ul><li>基金近期報酬率表現優異</li><li>亞洲股票市場前景看好，相關基金有望繼續成長</li></ul>
+<h4>劣勢 / 風險</h4><ul><li>市場波動風險</li><li>基金管理風險</li></ul></div>
 </div>
 <div class="tax">🏷️ 稅務標籤：境外所得（最低稅負制）｜免扣 2.11% 二代健保｜享 750 萬免稅額、100 萬免申報門檻</div>
 </div></details>

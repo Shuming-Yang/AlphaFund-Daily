@@ -1,7 +1,7 @@
 """報告生成器測試。"""
 from __future__ import annotations
 
-from alphafund.report import render_calendar, render_report
+from alphafund.report import _navbar_html, render_calendar, render_report
 
 
 def _sample_data():
@@ -105,13 +105,35 @@ def test_render_calendar_empty_dates():
     assert "byDate" in html
 
 
-def test_render_report_injects_calendar_and_top_links():
+def test_navbar_latest_vs_archive():
+    latest = _navbar_html(is_latest=True, date="2026-08-01")
+    assert 'class="active"' in latest
+    assert "最新報告" in latest
+    assert "歷史日曆" in latest
+
+    archive = _navbar_html(is_latest=False, date="2026-08-01")
+    assert "../index.html" in archive
+    assert "2026-08-01" in archive  # 日期徽章
+    assert 'class="active"' not in archive
+
+
+def test_navbar_has_cal_panel_opener():
+    html = _navbar_html(is_latest=True, date="2026-08-01")
+    assert "openCalPanel" in html
+
+
+def test_render_report_injects_calendar_and_nav():
     html = render_report(
         _sample_data(),
         _sample_nav(),
         "2026-08-01",
         calendar_html='<div id="cal" class="cal"></div>',
-        top_links='<a href="../index.html">回最新</a>',
+        nav_html='<nav class="navbar">導覽</nav>',
     )
     assert 'id="cal"' in html
-    assert "回最新" in html
+    assert '<nav class="navbar">導覽</nav>' in html
+
+
+def test_render_report_has_proportional_width():
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
+    assert "width:min(96%,1280px)" in html
