@@ -99,25 +99,43 @@ def test_render_report_compact_limits_ranking():
     assert "免責聲明" in html
 
 
-def test_channel_stats_partition_sums_to_list():
-    """獨家×3 + 跨通路 應等於清單數（窮盡分割）。"""
+def test_channel_stats_per_channel_totals():
+    """每通路在清單內的總數（含跨通路上架）。"""
     stats = _channel_stats(_sample_data(), limit=2)
-    assert sum(stats.values()) == 2
+    assert stats["元大證券"] == 1   # 0352 於元大
+    assert stats["匯豐銀行"] == 1   # 0352 於匯豐
+    assert stats["渣打銀行"] == 1   # 0352 於渣打
 
 
 def test_channel_stats_no_limit_uses_all():
     stats = _channel_stats(_sample_data(), limit=0)
-    assert sum(stats.values()) == len(_sample_data()["funds"])
+    assert stats["元大證券"] == 1
 
 
-def test_render_report_shows_channel_distribution():
+def test_render_report_shows_three_channel_counts():
     html = render_report(
         _sample_data(), _sample_nav(), "2026-08-01", rank_limit=2
     )
-    assert "通路分布" in html
-    assert "跨通路" in html
-    # 合計顯示
-    assert "合計 <b>2</b>" in html
+    assert "通路（排名清單 2 內）" in html
+    assert "元大" in html and "匯豐" in html and "渣打" in html
+    assert "跨通路" not in html  # 不再顯示獨家/跨通路分類
+
+
+def test_channel_badges_show_supported_channels():
+    from alphafund.report import _channel_badges
+    badges = _channel_badges(["元大證券", "渣打銀行"])
+    assert 'class="ch-badge">元大證券<' in badges
+    assert 'class="ch-badge">渣打銀行<' in badges
+    assert "匯豐銀行" not in badges
+    assert _channel_badges([]) == ""
+
+
+def test_ranking_rows_include_channel_badges():
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01", rank_limit=2
+    )
+    assert "<th>通路</th>" in html
+    assert 'class="ch-badge">元大證券' in html
 
 
 def test_render_calendar_marks_available_dates():

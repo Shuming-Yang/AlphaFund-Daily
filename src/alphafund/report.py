@@ -139,6 +139,9 @@ td.cmp-miss{color:#b0b6bd;text-align:center}
 .ch-chip.active b{opacity:.9;color:#fff}
 .ch-dist{font-size:13px;color:var(--ink);margin:12px 0 0}
 .ch-dist b{font-variant-numeric:tabular-nums}
+.ch-badges{display:inline-flex;justify-content:flex-end;gap:4px;flex-wrap:wrap}
+.ch-badge{font-size:11px;padding:1px 7px;border-radius:20px;border:1px solid var(--line);
+background:#eef1f4;color:var(--ink);white-space:nowrap}
 .jump-up{background:#d3f0dd;color:var(--pos);font-weight:700;border-radius:6px;padding:1px 6px;white-space:nowrap}
 .jump-down{background:#f7d6d6;color:var(--neg);font-weight:700;border-radius:6px;padding:1px 6px;white-space:nowrap}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
@@ -462,7 +465,8 @@ def _detail_card(
     return f"""<details id="fund-{_esc(fa['fund_code'])}" data-ch="{_esc(','.join(fa.get('channels', [])))}">
 <summary><span class="g">#{fa['rank']}</span>{_esc(name)}
 　<span class="rating r-{_esc(rating)}">{_esc(rating)}</span>
- <span class="num">深度分數 {score_txt} · 初評分 {fa['preliminary_score']}</span></summary>
+ <span class="num">深度分數 {score_txt} · 初評分 {fa['preliminary_score']}</span>
+ {_channel_badges(fa.get('channels') or [])}</summary>
 <div class="f-body">
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 {_esc(nav.get("nav", "-"))}（{_esc(nav.get("nav_date", "-"))}）<br>
@@ -501,7 +505,8 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
             f"<td class=\"num\">{deep_txt}</td>"
             f"<td>{f'<span class=\"rating r-{_esc(rating)}\">{_esc(rating)}</span>' if rating else '—'}</td>"
             f"<td><span class=\"{sent_cls}\">{_esc(sentiment)}</span></td>"
-            f"<td>{_esc(da.get('recommended_strategy') or '—')}</td></tr>"
+            f"<td>{_esc(da.get('recommended_strategy') or '—')}</td>"
+            f"<td>{_channel_badges(fa.get('channels') or [])}</td></tr>"
         )
     return "".join(rows)
 
@@ -548,38 +553,36 @@ def _channel_filter_html(funds: list[dict], limit: int = 0) -> str:
 
 
 def _channel_stats(analysis: dict, limit: int) -> dict[str, int]:
-    """通路分布：元大獨家／匯豐獨家／渣打獨家／跨通路（加總 = 清單數）。
-
-    因 universe 中每檔基金必屬 ≥1 通路（且僅屬此三家），此分類為窮盡分割，
-    故 獨家×3 + 跨通路 必然等於清單數。
-    """
-    buckets = {"元大證券": 0, "匯豐銀行": 0, "渣打銀行": 0, "跨通路": 0}
+    """排名清單內每通路總數（含跨通路上架之基金；三者加總可能 > 清單數）。"""
+    counts = {c: 0 for c in CHANNELS}
     funds = analysis.get("funds", [])
     rows = funds[:limit] if limit else funds
     for fa in rows:
-        ch = set(fa.get("channels") or [])
-        if len(ch) >= 2:
-            buckets["跨通路"] += 1
-        elif len(ch) == 1:
-            name = next(iter(ch))
-            if name in buckets:
-                buckets[name] += 1
-            else:
-                buckets["跨通路"] += 1  # 異常歸類（理論上不發生）
-        else:
-            buckets["跨通路"] += 1  # 空通路異常（真實資料不會發生）
-    return buckets
+        for c in CHANNELS:
+            if c in (fa.get("channels") or []):
+                counts[c] += 1
+    return counts
 
 
 def _channel_dist_html(stats: dict[str, int], limit: int) -> str:
-    return (
-        f'<p class="ch-dist">通路分布：'
-        f'元大獨家 <b>{stats["元大證券"]}</b> ｜ '
-        f'匯豐獨家 <b>{stats["匯豐銀行"]}</b> ｜ '
-        f'渣打獨家 <b>{stats["渣打銀行"]}</b> ｜ '
-        f'跨通路 <b>{stats["跨通路"]}</b>'
-        f"（合計 <b>{sum(stats.values())}</b> = 清單 {limit}；重疊計入跨通路）</p>"
+    parts = " ｜ ".join(
+        f"{_esc(name)} <b>{stats[name]}</b>" for name in CHANNELS
     )
+    return (
+        f'<p class="ch-dist">通路（排名清單 {limit} 內）：{parts}'
+        f"</p>"
+    )
+
+
+def _channel_badges(channels: list[str]) -> str:
+    """靠右通路小徽章（兩字全名）。"""
+    if not channels:
+        return ""
+    pills = "".join(
+        f'<span class="ch-badge">{_esc(name)}</span>' for name in CHANNELS
+        if name in (channels or [])
+    )
+    return f'<span class="ch-badges">{pills}</span>'
 
 
 def render_report(
@@ -669,7 +672,7 @@ def render_report(
 <summary><span class="g">▶</span> 展開／收合{rank_label}</summary>
 <div style="max-height:480px;overflow:auto;border-radius:8px">
 <table>
-<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th></tr></thead>
+<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th><th>通路</th></tr></thead>
 <tbody>{rank_rows}</tbody>
 </table></div>
 </details>
@@ -801,7 +804,7 @@ def _render_ranking_page(
 {filter_html}
 <div style="max-height:70vh;overflow:auto;border-radius:8px">
 <table>
-<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th></tr></thead>
+<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th><th>通路</th></tr></thead>
 <tbody>{rank_rows}</tbody>
 </table></div>
 <footer>
