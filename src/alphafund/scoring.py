@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 
 from .config import TIMEZONE
 from .models import Fund, NewsItem
+from .news import fund_matches_title
 
 # navValue5..10 對應期間權重（1M/3M/6M/1Y/2Y/3Y；1Y 與 6M 為主）
 PERIOD_WEIGHTS: dict[str, float] = {
@@ -56,25 +57,25 @@ def momentum(fund: Fund) -> tuple[float | None, dict[str, float | None]]:
 
 
 def news_volume(fund: Fund, news: list[NewsItem], days: int = 7) -> int:
-    """近 N 日與基金系列相關的新聞數（標題含基金主名稱/系列）。"""
+    """近 N 日與基金**特定**相關的新聞數（WP3：基金特定匹配，消除跨基金污染）。"""
     if not news:
         return 0
     cutoff = datetime.now(ZoneInfo(TIMEZONE)) - timedelta(days=days)
-    core = fund.name.split("-")[0].strip()[:20]
     count = 0
     for item in news:
         if not item.title:
             continue
-        if core and core in item.title:
-            if item.published_at:
-                try:
-                    dt = datetime.strptime(item.published_at, "%a, %d %b %Y %H:%M:%S %Z")
-                    dt = dt.replace(tzinfo=ZoneInfo("UTC"))
-                    if dt < cutoff:
-                        continue
-                except ValueError:
-                    pass
-            count += 1
+        if not fund_matches_title(fund, item.title):
+            continue
+        if item.published_at:
+            try:
+                dt = datetime.strptime(item.published_at, "%a, %d %b %Y %H:%M:%S %Z")
+                dt = dt.replace(tzinfo=ZoneInfo("UTC"))
+                if dt < cutoff:
+                    continue
+            except ValueError:
+                pass
+        count += 1
     return count
 
 

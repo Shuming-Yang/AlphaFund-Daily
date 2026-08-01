@@ -4,7 +4,6 @@ from __future__ import annotations
 import gzip
 import json
 import logging
-import re
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -14,7 +13,7 @@ from .analyzer import SYSTEM_PROMPT, build_user_prompt, parse_deep_analysis
 from .filters import filter_funds
 from .llm import LLMClient, QuotaExceeded, get_llm_client
 from .models import DailyAnalysis, DailySnapshot, Fund, FundAnalysis, NewsItem
-from .news import fetch_universe_news
+from .news import fund_matches_series, fund_matches_title, fetch_universe_news
 from .scoring import preliminary_score
 from .tdcc import TdccClient
 
@@ -136,18 +135,16 @@ def load_snapshot(date: str) -> DailySnapshot:
 
 
 def related_news(fund: Fund, news: list[NewsItem], limit: int = 10) -> list[NewsItem]:
-    """與基金相關之新聞：先比對完整級別名，再退而比對系列主名稱。"""
-    names = [fund.name]
-    if "-" in fund.name or "－" in fund.name:
-        core = re.split(r"[－\-]", fund.name, maxsplit=1)[0].strip()
-        if core:
-            names.append(core)
-    out = []
-    for n in news:
-        title = n.title or ""
-        if any(name and name in title for name in names):
-            out.append(n)
-    return out[:limit]
+    """與基金相關之新聞（WP3 分層）：優先基金特定匹配，無則退系列層。
+
+    - 第一層：`fund_matches_title`（全名 / distinctive 標的在標題）— 精準。
+    - 第二層：`fund_matches_series`（系列主名稱在標題）— 召回 fallback。
+    """
+    specific = [n for n in news if fund_matches_title(fund, n.title or "")]
+    if specific:
+        return specific[:limit]
+    series = [n for n in news if fund_matches_series(fund, n.title or "")]
+    return series[:limit]
 
 
 def compute_analysis(
