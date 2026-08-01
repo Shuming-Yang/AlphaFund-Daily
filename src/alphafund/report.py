@@ -68,8 +68,81 @@ summary .g{color:var(--mut);margin-right:6px}
 ul{margin:4px 0;padding-left:18px}
 footer{margin-top:36px;border-top:1px solid var(--line);padding-top:14px;
 font-size:12px;color:var(--mut)}
+.cal{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin:14px 0}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-head button{background:#eef1f4;border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:13px}
+.cal-title{font-weight:600;font-size:14px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}
+.cal-grid .dow{font-size:11px;color:var(--mut);padding:2px 0}
+.cal-grid .day{font-size:12px;padding:4px 0;border-radius:6px;color:#b0b6bd}
+.cal-grid .day a{display:block;color:var(--brand);text-decoration:none;font-weight:600;border-radius:6px}
+.cal-grid .day a:hover{background:#e5f1f8}
+.cal-grid .day.today a{outline:1px solid var(--brand)}
+.toplinks{font-size:13px;margin-bottom:4px}
+.toplinks a{color:var(--brand);text-decoration:none;margin-right:12px}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
 """
+
+
+def _available_dates() -> list[str]:
+    """data/history/ 下所有有分析結果的日期（排序）。"""
+    dates = [
+        d.name
+        for d in HISTORY_DIR.glob("????-??-??")
+        if d.is_dir() and (d / "analysis.json.gz").exists()
+    ]
+    return sorted(dates)
+
+
+def _calendar_js(dates: list[str], current: str, base: str) -> str:
+    dates_json = json.dumps(sorted(dates))
+    base_js = json.dumps(base)
+    return f"""<script>
+(function(){{
+  var dates = {dates_json};
+  var byDate = {{}};
+  dates.forEach(function(d){{ byDate[d] = true; }});
+  var current = {json.dumps(current)};
+  var base = {base_js};
+  var y = parseInt(current.slice(0,4),10), m = parseInt(current.slice(5,7),10);
+  var MONTHS = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+  function pad(n){{ return n<10 ? '0'+n : ''+n; }}
+  function render(){{
+    var first = new Date(y, m-1, 1);
+    var startDow = first.getDay();
+    var daysInMonth = new Date(y, m, 0).getDate();
+    var html = '<div class="cal-head"><button onclick="calNav(-1)">‹ 上月</button>' +
+      '<span class="cal-title">' + y + ' 年 ' + MONTHS[m-1] + '</span>' +
+      '<button onclick="calNav(1)">下月 ›</button></div><div class="cal-grid">';
+    ['日','一','二','三','四','五','六'].forEach(function(d){{ html += '<span class="dow">' + d + '</span>'; }});
+    for (var i=0;i<startDow;i++){{ html += '<span class="day"></span>'; }}
+    for (var d=1; d<=daysInMonth; d++){{
+      var key = y + '-' + pad(m) + '-' + pad(d);
+      var cls = 'day';
+      if (key === current) {{ cls += ' today'; }}
+      if (byDate[key]) {{ html += '<span class="'+cls+'"><a href="' + base + key + '.html">' + d + '</a></span>'; }}
+      else {{ html += '<span class="'+cls+'">' + d + '</span>'; }}
+    }}
+    html += '</div>';
+    document.getElementById('cal').innerHTML = html;
+  }}
+  window.calNav = function(delta){{
+    m += delta;
+    if (m < 1) {{ m = 12; y--; }}
+    if (m > 12) {{ m = 1; y++; }}
+    render();
+  }};
+  render();
+}})();
+</script>"""
+
+
+def render_calendar(dates: list[str], current: str, base: str = "archive/") -> str:
+    """月曆 widget：可點選有報告的日期；base 為 archive 頁相對前綴。"""
+    return (
+        '<div id="cal" class="cal" aria-label="歷史報告日曆"></div>\n'
+        + _calendar_js(dates, current, base)
+    )
 
 
 def _esc(value: object) -> str:
@@ -130,9 +203,11 @@ def _detail_card(fa: dict, nav_by_code: dict[str, dict]) -> str:
 </div></details>"""
 
 
-def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict]) -> str:
+def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) -> str:
     rows = []
-    for fa in analysis.get("funds", []):
+    for i, fa in enumerate(analysis.get("funds", [])):
+        if limit and i >= limit:
+            break
         da = fa.get("deep_analysis") or {}
         rating = da.get("overall_rating") or ""
         deep = da.get("value_score")
@@ -151,7 +226,14 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict]) -> str:
     return "".join(rows)
 
 
-def render_report(analysis: dict, nav_by_code: dict[str, dict], date: str) -> str:
+def render_report(
+    analysis: dict,
+    nav_by_code: dict[str, dict],
+    date: str,
+    compact: bool = False,
+    calendar_html: str = "",
+    top_links: str = "",
+) -> str:
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
     funds = analysis.get("funds", [])
     total = len(funds)
@@ -164,6 +246,16 @@ def render_report(analysis: dict, nav_by_code: dict[str, dict], date: str) -> st
         if f.get("deep_analysis")
     ) or "<p>（本日無深度分析資料）</p>"
 
+    if compact:
+        # 精簡版：僅前 50 名排名表（歷史 archive 頁，控制體積）
+        rank_limit = 50
+        rank_label = f"前 {rank_limit} 名排名"
+    else:
+        rank_limit = 0
+        rank_label = f"完整排名表（{total} 檔）"
+
+    rank_rows = _ranking_rows(analysis, nav_by_code, limit=rank_limit)
+
     return f"""<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -175,9 +267,12 @@ def render_report(analysis: dict, nav_by_code: dict[str, dict], date: str) -> st
 <body>
 <div class="wrap">
 <header>
+{top_links}
 <h1>AlphaFund-Daily 每日境外基金投研報告</h1>
 <div class="meta">報告日期：{_esc(date)} ｜ 頁面生成：{_esc(now)}（Asia/Taipei）</div>
 </header>
+
+{calendar_html}
 
 <div class="stat-row">
 <div class="stat"><b>{total}</b><span>目標基金（三通路 × USD）</span></div>
@@ -188,11 +283,11 @@ def render_report(analysis: dict, nav_by_code: dict[str, dict], date: str) -> st
 <h2>基金排名</h2>
 <p style="font-size:13px;color:var(--mut)">依 AI 初評分（動能 + 新聞聲量）排序；前段基金另有 LLM 深度分析。</p>
 <details>
-<summary><span class="g">▶</span> 展開／收合完整排名表（{total} 檔）</summary>
+<summary><span class="g">▶</span> 展開／收合{rank_label}</summary>
 <div style="max-height:480px;overflow:auto;border-radius:8px">
 <table>
 <thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th></tr></thead>
-<tbody>{_ranking_rows(analysis, nav_by_code)}</tbody>
+<tbody>{rank_rows}</tbody>
 </table></div>
 </details>
 
@@ -225,3 +320,54 @@ def generate_report(date: str, out_file: Path | None = None) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(html_out, encoding="utf-8")
     return path
+
+
+def _render_archive_page(date: str, dates: list[str]) -> str:
+    analysis, nav_by_code = load_report_data(date)
+    return render_report(
+        analysis,
+        nav_by_code,
+        date,
+        compact=True,
+        calendar_html=render_calendar(dates, date, base=""),
+        top_links='<div class="toplinks"><a href="../index.html">← 最新報告</a></div>',
+    )
+
+
+def generate_archive(docs_dir: Path | None = None) -> tuple[Path, list[Path]]:
+    """重產全部歷史 archive 頁 + docs/index.html（最新完整報告 + 月曆）。
+
+    - archive/<YYYY-MM-DD>.html：精簡版報告 + 月曆（歷史瀏覽）。
+    - index.html：最新完整報告 + 月曆（預設顯示最新）。
+    """
+    docs_dir = docs_dir or PROJECT_ROOT / "docs"
+    archive_dir = docs_dir / "archive"
+    dates = _available_dates()
+    if not dates:
+        raise FileNotFoundError("data/history 下無可生成之分析資料")
+
+    pages: list[Path] = []
+    for date in dates:
+        page = archive_dir / f"{date}.html"
+        page.parent.mkdir(parents=True, exist_ok=True)
+        page.write_text(_render_archive_page(date, dates), encoding="utf-8")
+        pages.append(page)
+
+    latest = dates[-1]
+    analysis, nav_by_code = load_report_data(latest)
+    index = docs_dir / "index.html"
+    index.write_text(
+        render_report(
+            analysis,
+            nav_by_code,
+            latest,
+            compact=False,
+            calendar_html=render_calendar(dates, latest, base="archive/"),
+            top_links=(
+                f'<div class="toplinks"><a href="archive/{latest}.html">'
+                f"本日報告存檔 ↗</a></div>"
+            ),
+        ),
+        encoding="utf-8",
+    )
+    return index, pages

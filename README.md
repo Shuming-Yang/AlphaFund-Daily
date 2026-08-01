@@ -189,7 +189,8 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 ├── data/
 │   └── history/<日期>/       每日快照（snapshot / nav / news / universe / analysis，.json.gz）
 ├── docs/
-│   ├── index.html            每日報告頁面（GitHub Pages 發布）
+│   ├── index.html            每日報告頁面（GitHub Pages 發布，含日曆）
+│   ├── archive/<日期>.html   歷史報告存檔（日曆瀏覽）
 │   ├── adr/                  重大決策記錄
 │   ├── m1-design.md          M1 設計文件
 │   ├── m2-design.md          M2 設計文件

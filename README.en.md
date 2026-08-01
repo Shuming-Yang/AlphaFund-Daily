@@ -189,7 +189,8 @@ Detailed planning for each milestone will be expanded later using the "grill-wit
 ├── data/
 │   └── history/<date>/       Daily snapshots (snapshot / nav / news / universe / analysis, .json.gz)
 ├── docs/
-│   ├── index.html            Daily report page (published via GitHub Pages)
+│   ├── index.html            Daily report page (published via GitHub Pages, with calendar)
+│   ├── archive/<date>.html   Historical report archive (calendar browsing)
 │   ├── adr/                  Architecture decision records
 │   ├── m1-design.md          M1 design document
 │   ├── m2-design.md          M2 design document

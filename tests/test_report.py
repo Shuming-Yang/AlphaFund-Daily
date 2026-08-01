@@ -1,7 +1,7 @@
 """報告生成器測試。"""
 from __future__ import annotations
 
-from alphafund.report import render_report
+from alphafund.report import render_calendar, render_report
 
 
 def _sample_data():
@@ -78,3 +78,40 @@ def test_render_report_escapes_html():
     html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
     assert "<script>" not in html
     assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+
+def test_render_report_compact_limits_ranking():
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01", compact=True)
+    assert "前 50 名排名" in html
+    # 精簡版仍含個案卡片
+    assert 'id="fund-0352"' in html
+    assert "免責聲明" in html
+
+
+def test_render_calendar_marks_available_dates():
+    html = render_calendar(["2026-08-01", "2026-08-02"], "2026-08-01", base="archive/")
+    assert 'id="cal"' in html
+    # 連結由 JS 於執行期依 base + 日期動態組成，靜態 HTML 內嵌日期清單與 base
+    assert '"archive/"' in html          # base 前綴嵌入
+    assert '"2026-08-01"' in html        # 日期清單 JSON
+    assert '"2026-08-02"' in html
+    assert '"2026-08-01"' in html        # current 嵌入
+    assert '"2026-08-03"' not in html
+
+
+def test_render_calendar_empty_dates():
+    html = render_calendar([], "2026-08-01")
+    assert 'id="cal"' in html
+    assert "byDate" in html
+
+
+def test_render_report_injects_calendar_and_top_links():
+    html = render_report(
+        _sample_data(),
+        _sample_nav(),
+        "2026-08-01",
+        calendar_html='<div id="cal" class="cal"></div>',
+        top_links='<a href="../index.html">回最新</a>',
+    )
+    assert 'id="cal"' in html
+    assert "回最新" in html
