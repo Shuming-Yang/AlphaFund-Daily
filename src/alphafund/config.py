@@ -118,3 +118,6 @@ LLM_PROVIDER = LLM_PROVIDER_CHAIN[0]
 
 TOP_N_DEEP_ANALYSIS = 15  # 免費額度 RPD≈17（gemini-3.6-flash）下的保守名額
 GEMINI_TEMPERATURE = 0.2
+
+# 報告排名表顯示上限（universe 仍為全體，僅顯示前 N 名）
+RANKING_LIMIT = int(os.environ.get("RANKING_LIMIT", "500"))

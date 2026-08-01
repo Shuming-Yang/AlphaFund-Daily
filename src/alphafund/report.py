@@ -32,7 +32,10 @@ TRENDS_FILE = PROJECT_ROOT / "docs" / "trends.html"
 RANKING_FILE = PROJECT_ROOT / "docs" / "ranking.html"
 
 # 首頁排名表列數上限（完整排名移至 docs/ranking.html，控制 index 體積）
-INDEX_RANK_LIMIT = 300
+INDEX_RANK_LIMIT = 500
+
+# 排名跳動高亮門檻：視窗首日→末日 |Δrank| 達此值即標記大幅變動
+RANK_JUMP_THRESHOLD = 10
 
 _PERIODS = [
     ("1月", "navValue5"),
@@ -134,6 +137,10 @@ td.cmp-miss{color:#b0b6bd;text-align:center}
 .ch-chip:hover{background:#eef1f4}
 .ch-chip.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
 .ch-chip.active b{opacity:.9;color:#fff}
+.ch-dist{font-size:13px;color:var(--ink);margin:12px 0 0}
+.ch-dist b{font-variant-numeric:tabular-nums}
+.jump-up{background:#d3f0dd;color:var(--pos);font-weight:700;border-radius:6px;padding:1px 6px;white-space:nowrap}
+.jump-down{background:#f7d6d6;color:var(--neg);font-weight:700;border-radius:6px;padding:1px 6px;white-space:nowrap}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
 """
 
@@ -277,11 +284,13 @@ def _trend_mini_table(points: list[TrendPoint]) -> str:
     rows = "".join(
         f"<tr><td>{_esc(p.date[5:])}</td>"
         f"<td class=\"num\">{_esc(f'{p.preliminary_score:.0f}')}</td>"
-        f"<td class=\"num\">{_esc(p.rank)}</td></tr>"
+        f"<td class=\"num\">{_esc(p.rank)}</td>"
+        f"<td class=\"num\">{_esc(f'{p.value_score:.0f}' if p.value_score is not None else '—')}</td></tr>"
         for p in points
     )
     return (
-        '<table class="mini"><thead><tr><th>日期</th><th>初評分</th><th>排名</th></tr></thead>'
+        '<table class="mini"><thead><tr><th>日期</th><th>初評分</th><th>排名</th>'
+        "<th>深度分數</th></tr></thead>"
         f"<tbody>{rows}</tbody></table>"
     )
 
@@ -308,11 +317,23 @@ def _trend_block(fund_code: str, series: dict[str, list[TrendPoint]] | None) -> 
         f"・高 {st['max']:.0f}／低 {st['min']:.0f}／均 {st['avg']:.0f}"
     )
     rank_line = f"排名區間 {st_r['max']}–{st_r['min']}"
+    # 深度分數（value_score）為稀疏序列：僅在 ≥2 個交易日有深度分析時顯示
+    s_value = sparkline_svg(pts, "value_score", label="深度分數")
+    value_block = ""
+    if s_value:
+        st_v = trend_stats(pts, "value_score")
+        value_block = (
+            '<span class="trend-metric">深度分數（僅深度分析日）</span>' + s_value
+            + f'<div class="trend-stats">初 {st_v["first"]:.0f} → 末 {st_v["last"]:.0f}'
+            f'（{"▲" if st_v["delta"] >= 0 else "▼"}{abs(st_v["delta"]):.1f}）'
+            f"・高 {st_v['max']:.0f}／低 {st_v['min']:.0f}／均 {st_v['avg']:.0f}</div>"
+        )
     return (
         '<div class="blk trend-blk"><h4>📈 近期趨勢（近 '
         f"{len(pts)} 日）</h4>"
         '<span class="trend-metric">初評分</span>' + s_score
         + '<span class="trend-metric">排名（倒序，越低越好）</span>' + s_rank
+        + value_block
         + f'<div class="trend-stats">{_esc(stats_line)}<br>{_esc(rank_line)}</div>'
         + _trend_mini_table(pts[-5:])
         + "</div>"
@@ -402,6 +423,11 @@ def _rank_delta_cell(
     if first is None or last is None:
         return '<td class="cmp-rank">—</td>'
     d = last - first
+    if abs(d) >= RANK_JUMP_THRESHOLD:
+        # 大幅跳動：高亮（大升 .jump-up / 大降 .jump-down）
+        if d < 0:
+            return f'<td class="cmp-rank"><span class="jump-up">▲{abs(d)}</span></td>'
+        return f'<td class="cmp-rank"><span class="jump-down">▼{d}</span></td>'
     if d == 0:
         label, cls = "持平", "sent-u"
     elif d < 0:
@@ -521,6 +547,41 @@ def _channel_filter_html(funds: list[dict], limit: int = 0) -> str:
     )
 
 
+def _channel_stats(analysis: dict, limit: int) -> dict[str, int]:
+    """通路分布：元大獨家／匯豐獨家／渣打獨家／跨通路（加總 = 清單數）。
+
+    因 universe 中每檔基金必屬 ≥1 通路（且僅屬此三家），此分類為窮盡分割，
+    故 獨家×3 + 跨通路 必然等於清單數。
+    """
+    buckets = {"元大證券": 0, "匯豐銀行": 0, "渣打銀行": 0, "跨通路": 0}
+    funds = analysis.get("funds", [])
+    rows = funds[:limit] if limit else funds
+    for fa in rows:
+        ch = set(fa.get("channels") or [])
+        if len(ch) >= 2:
+            buckets["跨通路"] += 1
+        elif len(ch) == 1:
+            name = next(iter(ch))
+            if name in buckets:
+                buckets[name] += 1
+            else:
+                buckets["跨通路"] += 1  # 異常歸類（理論上不發生）
+        else:
+            buckets["跨通路"] += 1  # 空通路異常（真實資料不會發生）
+    return buckets
+
+
+def _channel_dist_html(stats: dict[str, int], limit: int) -> str:
+    return (
+        f'<p class="ch-dist">通路分布：'
+        f'元大獨家 <b>{stats["元大證券"]}</b> ｜ '
+        f'匯豐獨家 <b>{stats["匯豐銀行"]}</b> ｜ '
+        f'渣打獨家 <b>{stats["渣打銀行"]}</b> ｜ '
+        f'跨通路 <b>{stats["跨通路"]}</b>'
+        f"（合計 <b>{sum(stats.values())}</b> = 清單 {limit}；重疊計入跨通路）</p>"
+    )
+
+
 def render_report(
     analysis: dict,
     nav_by_code: dict[str, dict],
@@ -549,9 +610,12 @@ def render_report(
     )
 
     if compact:
-        # 精簡版：僅前 50 名排名表（歷史 archive 頁，控制體積）
-        limit = 50
-        rank_label = f"前 {limit} 名排名"
+        # 精簡版（archive 歷史頁）：與首頁一致顯示前 INDEX_RANK_LIMIT 名
+        limit = INDEX_RANK_LIMIT
+        rank_label = (
+            f"前 {limit} 名排名（完整排名見 "
+            '<a href="../ranking.html" style="color:var(--brand)">ranking.html</a>）'
+        )
     elif rank_limit is not None:
         limit = rank_limit
         rank_label = (
@@ -564,6 +628,11 @@ def render_report(
 
     channel_filter_html = (
         _channel_filter_html(funds, limit) if (show_channel_filter and not compact) else ""
+    )
+    channel_dist_html = (
+        _channel_dist_html(_channel_stats(analysis, limit), limit)
+        if limit
+        else ""
     )
     rank_rows = _ranking_rows(analysis, nav_by_code, limit=limit)
 
@@ -586,10 +655,12 @@ def render_report(
 {calendar_html}
 
 <div class="stat-row">
-<div class="stat"><b>{total}</b><span>目標基金（三通路 × USD）</span></div>
+<div class="stat"><b>{limit}</b><span>排名清單（全體 {total} 檔）</span></div>
 <div class="stat"><b>{deep_count}</b><span>深度分析檔數</span></div>
 <div class="stat"><b>{len(scored)}</b><span>已產生 AI 評級</span></div>
 </div>
+
+{channel_dist_html}
 
 <h2>基金排名</h2>
 <p style="font-size:13px;color:var(--mut)">依 AI 初評分（動能 + 新聞聲量）排序；前段基金另有 LLM 深度分析。</p>
@@ -813,10 +884,19 @@ def _render_trends_page(
             continue
         s_score = sparkline_svg(pts, "preliminary_score", width=560, height=150, label="初評分")
         s_rank = sparkline_svg(pts, "rank", width=560, height=150, label="排名")
+        s_value = sparkline_svg(pts, "value_score", width=560, height=150, label="深度分數")
         st = trend_stats(pts, "preliminary_score")
         st_r = trend_stats(pts, "rank")
         rating = (f.get("deep_analysis") or {}).get("overall_rating") or "-"
         date_txt = "、".join(p.date[5:] for p in pts)
+        value_chart = ""
+        if s_value:
+            st_v = trend_stats(pts, "value_score")
+            value_chart = (
+                f'<div class="trend-chart"><h4>深度分數（僅深度分析日；{st_v["first"]:.0f} → '
+                f'{st_v["last"]:.0f}，{"▲" if st_v["delta"] >= 0 else "▼"}{abs(st_v["delta"]):.1f}）</h4>'
+                f"{s_value}</div>"
+            )
         cards.append(
             f'<div class="trend-hero"><h3>#{f["rank"]} {_esc(f["name"])}'
             f' <span class="rating r-{_esc(rating)}">{_esc(rating)}</span></h3>'
@@ -825,6 +905,7 @@ def _render_trends_page(
             f'<div class="trend-chart"><h4>初評分（{st["first"]:.0f} → {st["last"]:.0f}'
             f'，{"▲" if st["delta"] >= 0 else "▼"}{abs(st["delta"]):.1f}）</h4>{s_score}</div>'
             f'<div class="trend-chart"><h4>排名（倒序，越低越好；區間 {st_r["max"]}–{st_r["min"]}）</h4>{s_rank}</div>'
+            f"{value_chart}"
             "</div>"
             f'<div class="trend-stats">區間：初 {st["first"]:.0f} → 末 {st["last"]:.0f}'
             f' ｜ 高 {st["max"]:.0f} ／ 低 {st["min"]:.0f} ／ 平均 {st["avg"]:.0f}'

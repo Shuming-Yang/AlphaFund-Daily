@@ -2,8 +2,13 @@
 from __future__ import annotations
 
 from alphafund.report import (
+    INDEX_RANK_LIMIT,
+    RANK_JUMP_THRESHOLD,
     _channel_filter_html,
+    _channel_stats,
     _navbar_html,
+    _rank_delta_cell,
+    _trend_mini_table,
     render_calendar,
     render_report,
 )
@@ -88,10 +93,31 @@ def test_render_report_escapes_html():
 
 def test_render_report_compact_limits_ranking():
     html = render_report(_sample_data(), _sample_nav(), "2026-08-01", compact=True)
-    assert "前 50 名排名" in html
+    assert f"前 {INDEX_RANK_LIMIT} 名排名" in html
     # 精簡版仍含個案卡片
     assert 'id="fund-0352"' in html
     assert "免責聲明" in html
+
+
+def test_channel_stats_partition_sums_to_list():
+    """獨家×3 + 跨通路 應等於清單數（窮盡分割）。"""
+    stats = _channel_stats(_sample_data(), limit=2)
+    assert sum(stats.values()) == 2
+
+
+def test_channel_stats_no_limit_uses_all():
+    stats = _channel_stats(_sample_data(), limit=0)
+    assert sum(stats.values()) == len(_sample_data()["funds"])
+
+
+def test_render_report_shows_channel_distribution():
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01", rank_limit=2
+    )
+    assert "通路分布" in html
+    assert "跨通路" in html
+    # 合計顯示
+    assert "合計 <b>2</b>" in html
 
 
 def test_render_calendar_marks_available_dates():
@@ -291,3 +317,59 @@ def test_render_report_compact_no_channel_filter():
         compact=True, show_channel_filter=True,
     )
     assert 'class="ch-filters"' not in html
+
+
+def test_render_report_value_score_sparkline_when_sufficient():
+    """深度分數（value_score）≥2 個非 None 點 → 個案卡片出現深度分數趨勢。"""
+    series = {
+        "0352": [
+            TrendPoint(date="2026-07-31", preliminary_score=90.0, rank=1, value_score=85.0),
+            TrendPoint(date="2026-08-01", preliminary_score=93.9, rank=1, value_score=88.0),
+        ]
+    }
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01", series=series)
+    assert "深度分數（僅深度分析日）" in html
+    assert 'aria-label="深度分數 趨勢"' in html
+
+
+def test_render_report_value_score_sparkline_hidden_when_sparse():
+    """僅 1 個深度分數點 → 深度分數趨勢不顯示（避免單點圖）。"""
+    series = {
+        "0352": [
+            TrendPoint(date="2026-07-31", preliminary_score=90.0, rank=1, value_score=85.0),
+            TrendPoint(date="2026-08-01", preliminary_score=93.9, rank=1, value_score=None),
+        ]
+    }
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01", series=series)
+    assert "深度分數（僅深度分析日）" not in html
+    assert 'aria-label="深度分數 趨勢"' not in html
+
+
+def test_rank_delta_cell_jump_highlight():
+    def series(deltas):
+        pts = []
+        for i, r in enumerate(deltas):
+            pts.append(TrendPoint(date=f"2026-07-{31-i:02d}", preliminary_score=80.0, rank=r))
+        return {"X": pts}
+
+    # 大升 15 → jump-up
+    up = _rank_delta_cell("X", series([20, 5]))
+    assert 'class="jump-up"' in up and "▲15" in up
+    # 大降 12 → jump-down
+    down = _rank_delta_cell("X", series([5, 17]))
+    assert 'class="jump-down"' in down and "▼12" in down
+    # 小跳動 5 → 一般標示，無 jump class
+    small = _rank_delta_cell("X", series([10, 5]))
+    assert "jump" not in small and "▲5" in small
+    assert RANK_JUMP_THRESHOLD == 10
+
+
+def test_trend_mini_table_value_score_column():
+    pts = [
+        TrendPoint(date="2026-07-31", preliminary_score=90.0, rank=1, value_score=85.0),
+        TrendPoint(date="2026-08-01", preliminary_score=93.9, rank=1, value_score=None),
+    ]
+    html = _trend_mini_table(pts)
+    assert "深度分數" in html
+    assert "<td class=\"num\">85</td>" in html   # 有深度分數日
+    assert "<td class=\"num\">—</td>" in html    # 無深度分數日

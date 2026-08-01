@@ -178,7 +178,7 @@ The daily report page includes the following modules:
 | M3 Report & Schedule | Static web report generation and daily 06:00 scheduled publishing | Daily report pages | Done |
 | M4 History Archive & Calendar | Historical archive pages + calendar browsing (latest/historical switching) | Historical report calendar | Done |
 | M5 Trend Comparison | Score/rank trends over time, multi-day side-by-side comparison | Case trend charts + comparison table + `trends.html` | Done |
-| M6 Quality & UX | Slim homepage + channel filter, score calibration, news quality, trend deepening | Lightweight index + `ranking.html` + calibration | In progress (WP1 done) |
+| M6 Quality & UX | Slim homepage + channel filter, score calibration, news quality, trend deepening | Lightweight index + `ranking.html` + calibration | Done |
 
 Detailed planning for each milestone will be expanded later using the "grill-with-docs" skill.
 
