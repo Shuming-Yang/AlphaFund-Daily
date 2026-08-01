@@ -32,7 +32,7 @@ TRENDS_FILE = PROJECT_ROOT / "docs" / "trends.html"
 RANKING_FILE = PROJECT_ROOT / "docs" / "ranking.html"
 
 # 首頁排名表列數上限（完整排名移至 docs/ranking.html，控制 index 體積）
-INDEX_RANK_LIMIT = 100
+INDEX_RANK_LIMIT = 300
 
 _PERIODS = [
     ("1月", "navValue5"),

@@ -14,9 +14,9 @@
 
 ## WP1 — 首頁瘦身 + 通路 filter（已完成）
 
-### Item 8：index 體積 669KB → 88KB
+### Item 8：index 體積 669KB → 150KB
 
-- 首頁排名表精簡為**前 100 列**（`INDEX_RANK_LIMIT`）。
+- 首頁排名表精簡為**前 300 列**（`INDEX_RANK_LIMIT`）。
 - 完整排名拆分至獨立頁 **`docs/ranking.html`**（最新全體 2,128 列，僅覆寫一份）。
 - 歷史 archive 頁維持精簡（前 50 列）。
 - navbar 新增「🏆 完整排名」；排名區提供 `ranking.html` 連結。
@@ -27,7 +27,7 @@
 - 排名表 `<tr>` 與個案卡片 `<details>` 標 `data-ch`（如 `data-ch="元大證券,匯豐銀行"`）。
 - 排名區上方 filter chips：`[全部] [元大證券] [匯豐銀行] [渣打銀行]`，顯示各自列數。
 - Vanilla JS 同步篩選排名表＋個案卡片（比照月曆做法）。
-- 套用頁面：`index.html`（前 100）＋ `ranking.html`（全體）；**archive 頁不套用**。
+- 套用頁面：`index.html`（前 300）＋ `ranking.html`（全體）；**archive 頁不套用**。
 - 決策詳見 ADR-0009。
 
 ## 驗證（WP1）
@@ -35,9 +35,9 @@
 - 單元測試 78 項全綠（新增 9 項：rank_limit 標籤、data-ch、filter 計數與上限、注入、compact 排除）。
 - 瀏覽器驗證（Playwright）：
   - `ranking.html`：2,128 列；點「渣打銀行」→ 1,578 列（與資料一致）；「全部」還原。
-  - `index.html`：100 列；點「元大證券」→ 排名 86 列＋卡片 20 張同步篩選。
+  - `index.html`：300 列；點「元大證券」→ 排名與卡片同步篩選。
   - archive 頁無 filter、無 active 高亮、ranking/trends 連結正常。
-- 檔案大小：index 87.6KB、ranking 708KB（單份）、archive 66.9KB、trends 6.8KB。
+- 檔案大小：index 148KB、ranking 708KB（單份）、archive 66.9KB、trends 6.8KB。
 
 ---
 

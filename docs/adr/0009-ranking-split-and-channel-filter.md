@@ -8,7 +8,7 @@
 
 ## 決策
 
-1. **首頁排名表精簡為前 100 列**（`INDEX_RANK_LIMIT = 100`），index 由 669KB → ~88KB。
+1. **首頁排名表精簡為前 300 列**（`INDEX_RANK_LIMIT = 300`），index 由 669KB → ~150KB。
 2. **完整排名拆分至獨立頁 `docs/ranking.html`**（最新全體 2,128 列，僅覆寫一份，不按日期累積）；歷史日期維持 archive 精簡版（前 50 列）。
 3. **銷售通路 filter**：排名表 `<tr>` 與個案卡片 `<details>` 標 `data-ch`；頁面頂部 filter chips（全部／元大證券／匯豐銀行／渣打銀行），以 vanilla JS（比照月曆）同步篩選兩區塊。套用於 index 與 ranking 頁；**archive 精簡頁不套用**（控制體積與維護量）。
 
