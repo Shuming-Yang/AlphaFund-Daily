@@ -6,7 +6,11 @@ import json
 import httpx
 import pytest
 
-from alphafund.analyzer import build_user_prompt, parse_deep_analysis
+from alphafund.analyzer import (
+    SYSTEM_PROMPT,
+    build_user_prompt,
+    parse_deep_analysis,
+)
 from alphafund.llm import (
     CloudflareClient,
     FallbackLLM,
@@ -386,3 +390,46 @@ def test_parse_deep_analysis_handles_non_dict():
     assert da.fund_code == "X"
     assert "格式異常" in da.score_rationale
     assert da.value_score == 0.0
+
+
+# --- WP2 評分校準（ADR-0010）---
+
+def test_system_prompt_has_calibration_guidance():
+    assert "評分校準指引" in SYSTEM_PROMPT
+    assert "55–85" in SYSTEM_PROMPT
+    assert "避免將不同標的都評為相近分數" in SYSTEM_PROMPT
+    assert "評級決策指引" in SYSTEM_PROMPT
+    assert "強力推薦" in SYSTEM_PROMPT and "暫時避開" in SYSTEM_PROMPT
+
+
+def test_parse_rating_in_allowed_band_kept():
+    # 85 屬「值得關注」合理帶 [55,89] → 保留 LLM 判斷
+    da = parse_deep_analysis(
+        {"value_score": 85, "overall_rating": "值得關注"}, "0352", "2026-08-01"
+    )
+    assert da.overall_rating == "值得關注"
+
+
+def test_parse_rating_strong_rec_with_low_score_overridden():
+    # 強力推薦 + 30 分 → 覆寫為門檻評級（暫時避開）
+    da = parse_deep_analysis(
+        {"value_score": 30, "overall_rating": "強力推薦"}, "X", "2026-08-01"
+    )
+    assert da.overall_rating == "暫時避開"
+
+
+def test_parse_rating_avoid_with_high_score_overridden():
+    # 暫時避開 + 85 分 → 覆寫為門檻評級（強力推薦）
+    da = parse_deep_analysis(
+        {"value_score": 85, "overall_rating": "暫時避開"}, "X", "2026-08-01"
+    )
+    assert da.overall_rating == "強力推薦"
+
+
+def test_parse_rating_empty_derived_from_score():
+    da = parse_deep_analysis({"value_score": 88}, "X", "2026-08-01")
+    assert da.overall_rating == "強力推薦"
+    da = parse_deep_analysis({"value_score": 55}, "X", "2026-08-01")
+    assert da.overall_rating == "中立觀望"
+    da = parse_deep_analysis({"value_score": 45}, "X", "2026-08-01")
+    assert da.overall_rating == "暫時避開"
