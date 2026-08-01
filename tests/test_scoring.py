@@ -57,8 +57,20 @@ def test_preliminary_score_news_bonus():
     ]
     score, breakdown = preliminary_score(f, news)
     assert breakdown["news_count"] == 2
-    assert breakdown["news_score"] == 6.0  # min(15, 2*3)
-    assert score == 36.0  # 30 + 6
+    assert breakdown["news_score"] == 4.0  # min(10, 2*2)
+    assert score == 34.0  # 30 + 4
+
+
+def test_preliminary_score_news_capped_at_10():
+    f = Fund(
+        fund_code="A",
+        name="測試全球基金-美元",
+        returns={k: "0" for k in ("navValue5", "navValue6", "navValue7", "navValue8")},
+    )
+    news = [NewsItem(title=f"測試全球基金 新聞{i}", url=f"u{i}") for i in range(8)]
+    score, breakdown = preliminary_score(f, news)
+    assert breakdown["news_score"] == 10.0  # 5 則封頂 10 分
+    assert score == 40.0
 
 
 def test_news_volume_matches_only_related():

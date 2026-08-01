@@ -3,7 +3,7 @@
 輸入：M1 `nav.json` 之期間報酬（navValue5..10）與新聞聲量。
 維度：
 - 績效動能（0–85）：期間報酬加權，映射 30 + 動能% × 1.5。
-- 新聞聲量（0–15）：近 7 日相關新聞數（M1 新聞以系列關鍵字抓取，訊號弱，權重低）。
+- 新聞聲量（0–10）：近 7 日基金特定相關新聞數（權重低，每則 +2、5 則封頂）。
 評分刻意透明、可測試；前段基金之最終分數以 LLM 深度分析為準（40/40/20）。
 """
 from __future__ import annotations
@@ -23,6 +23,10 @@ PERIOD_WEIGHTS: dict[str, float] = {
     "navValue7": 0.25,  # 6 月
     "navValue8": 0.35,  # 1 年
 }
+
+# 新聞聲量權重（低）：佔比上限 ~10%（動能 85 + 新聞 10）
+NEWS_SCORE_CAP = 10.0      # 新聞聲量分上限（0–10）
+NEWS_SCORE_PER_ITEM = 2.0  # 每則基金特定新聞加分
 
 _NON_NUM = re.compile(r"[^\d.\-+]")
 
@@ -93,7 +97,7 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
         score_m = _clamp(30.0 + mom * 1.5, 0.0, 85.0)
 
     n = news_volume(fund, news)
-    score_n = min(15.0, n * 3.0)
+    score_n = min(NEWS_SCORE_CAP, n * NEWS_SCORE_PER_ITEM)
 
     total = round(score_m + score_n, 1)
     breakdown = {
