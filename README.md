@@ -178,7 +178,7 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 | M3 報告與排程 | 靜態網頁報告產出與每日 06:00 排程發布 | 每日報告頁面 | 已完成 |
 | M4 歷史存檔與日曆 | 歷史 archive 頁 + 月曆瀏覽（首頁/歷史報告切換） | 歷史報告日曆 | 已完成 |
 | M5 趨勢比較 | 評分／排名隨時間趨勢圖、多日並排比較 | 個案趨勢圖 + 比較表 + `trends.html` | 已完成 |
-| M6 品質調校 | 評分校準、成本優化、異常告警、評級多樣性 | 穩定運行之自動化系統 | 待辦 |
+| M6 品質與體驗 | 首頁瘦身＋通路篩選、評分校準、新聞品質、趨勢深化 | 輕量首頁 + `ranking.html` + 品質校準 | 進行中（WP1 完成） |
 
 各里程碑之詳細規劃與實作細節，將於後續以「grill-with-docs」技能逐項展開。
 
@@ -192,13 +192,15 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 │   └── history/<日期>/       每日快照（snapshot / nav / news / universe / analysis，.json.gz）
 ├── docs/
 │   ├── index.html            每日報告頁面（GitHub Pages 發布，含日曆）
+│   ├── ranking.html          完整排名表（最新全體 2,128 列，含通路篩選）
 │   ├── trends.html           趨勢比較頁（趨勢圖 + 多日並排比較）
 │   ├── archive/<日期>.html   歷史報告存檔（日曆瀏覽）
 │   ├── adr/                  重大決策記錄
 │   ├── m1-design.md          M1 設計文件
 │   ├── m2-design.md          M2 設計文件
 │   ├── m3-design.md          M3 設計文件
-│   └── m4-calendar-archive.md  M4 設計文件
+│   ├── m4-calendar-archive.md  M4 設計文件
+│   └── m5-trend-comparison.md  M5 設計文件
 ├── tests/                    單元測試（fixtures）
 ├── README.md                 繁體中文（預設）
 ├── README.en.md              English

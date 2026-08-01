@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from .config import HISTORY_DIR, PROJECT_ROOT, TIMEZONE
+from .config import CHANNELS, HISTORY_DIR, PROJECT_ROOT, TIMEZONE
 from .trends import (
     DEFAULT_WINDOW,
     TrendPoint,
@@ -29,6 +29,10 @@ from .trends import (
 
 REPORT_FILE = PROJECT_ROOT / "docs" / "index.html"
 TRENDS_FILE = PROJECT_ROOT / "docs" / "trends.html"
+RANKING_FILE = PROJECT_ROOT / "docs" / "ranking.html"
+
+# 首頁排名表列數上限（完整排名移至 docs/ranking.html，控制 index 體積）
+INDEX_RANK_LIMIT = 100
 
 _PERIODS = [
     ("1月", "navValue5"),
@@ -123,6 +127,13 @@ td.cmp-miss{color:#b0b6bd;text-align:center}
 .trend-chart{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fafbfc}
 .trend-chart h4{margin:0 0 6px;font-size:12px;color:var(--mut)}
 .trend-chart svg{width:100%;height:auto}
+.ch-filters{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:10px 0}
+.ch-label{font-size:13px;color:var(--mut)}
+.ch-chip{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:3px 12px;font-size:13px;cursor:pointer;color:var(--ink)}
+.ch-chip b{font-weight:600;opacity:.75;margin-left:2px}
+.ch-chip:hover{background:#eef1f4}
+.ch-chip.active{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:600}
+.ch-chip.active b{opacity:.9;color:#fff}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
 """
 
@@ -202,21 +213,31 @@ def _calendar_panel(dates: list[str], current: str, base: str) -> str:
     )
 
 
-def _navbar_html(is_latest: bool, date: str) -> str:
-    """固定頂部導覽列。"""
+def _navbar_html(is_latest: bool, date: str, active: str | None = None) -> str:
+    """固定頂部導覽列；active 指定目前頁面（index / ranking / trends），預設 index（archive 頁無高亮）。"""
+    active = active if active is not None else ("index" if is_latest else "")
     trends_href = "trends.html" if is_latest else "../trends.html"
+    ranking_href = "ranking.html" if is_latest else "../ranking.html"
+    index_href = "index.html" if is_latest else "../index.html"
+
+    def link(href: str, label: str, key: str) -> str:
+        cls = ' class="active"' if active == key else ""
+        return f'<a{cls} href="{href}">{label}</a>'
+
     if is_latest:
         links = (
-            '<a class="active" href="index.html">最新報告</a>'
-            f'<a href="{trends_href}">📈 趨勢</a>'
-            '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
+            link(index_href, "最新報告", "index")
+            + link(ranking_href, "🏆 完整排名", "ranking")
+            + link(trends_href, "📈 趨勢", "trends")
+            + '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
         )
     else:
         links = (
-            '<a href="../index.html">← 最新報告</a>'
-            f'<a href="{trends_href}">📈 趨勢</a>'
-            '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
-            f'<span class="date-badge">{_esc(date)}</span>'
+            link(index_href, "← 最新報告", "index")
+            + link(ranking_href, "🏆 完整排名", "ranking")
+            + link(trends_href, "📈 趨勢", "trends")
+            + '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
+            + f'<span class="date-badge">{_esc(date)}</span>'
         )
     return (
         '<nav class="navbar"><div class="nav-inner">'
@@ -412,7 +433,7 @@ def _detail_card(
     score = da.get("value_score")
     score_txt = f"{score:.0f}" if score is not None else "-"
 
-    return f"""<details id="fund-{_esc(fa['fund_code'])}">
+    return f"""<details id="fund-{_esc(fa['fund_code'])}" data-ch="{_esc(','.join(fa.get('channels', [])))}">
 <summary><span class="g">#{fa['rank']}</span>{_esc(name)}
 　<span class="rating r-{_esc(rating)}">{_esc(rating)}</span>
  <span class="num">深度分數 {score_txt} · 初評分 {fa['preliminary_score']}</span></summary>
@@ -446,8 +467,9 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
         deep_txt = f"{deep:.0f}" if deep is not None else "—"
         sentiment = da.get("market_sentiment") or "—"
         sent_cls = {"Positive": "sent-p", "Negative": "sent-n"}.get(sentiment, "sent-u")
+        ch = ",".join(fa.get("channels", []))
         rows.append(
-            f"<tr><td class=\"num\">{fa['rank']}</td>"
+            f"<tr data-ch=\"{_esc(ch)}\"><td class=\"num\">{fa['rank']}</td>"
             f"<td><a href=\"#fund-{_esc(fa['fund_code'])}\">{_esc(fa['name'])}</a></td>"
             f"<td class=\"num\">{fa['preliminary_score']}</td>"
             f"<td class=\"num\">{deep_txt}</td>"
@@ -456,6 +478,47 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
             f"<td>{_esc(da.get('recommended_strategy') or '—')}</td></tr>"
         )
     return "".join(rows)
+
+
+CHANNEL_JS = """<script>
+(function(){
+  window.setChannel = function(c){
+    var sel = function(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); };
+    sel('tr[data-ch]').forEach(function(tr){
+      tr.style.display = (c==='all' || (tr.getAttribute('data-ch')||'').split(',').indexOf(c)>=0) ? '' : 'none';
+    });
+    sel('details[data-ch]').forEach(function(d){
+      d.style.display = (c==='all' || (d.getAttribute('data-ch')||'').split(',').indexOf(c)>=0) ? '' : 'none';
+    });
+    sel('.ch-chip').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-c')===c);
+    });
+  };
+})();
+</script>"""
+
+
+def _channel_filter_html(funds: list[dict], limit: int = 0) -> str:
+    """銷售通路 filter chips（依目前排名清單計數）。"""
+    rows = funds[:limit] if limit else funds
+    counts: dict[str, int] = {}
+    for f in rows:
+        for c in f.get("channels", []):
+            counts[c] = counts.get(c, 0) + 1
+    chips = [
+        f'<button type="button" class="ch-chip active" data-c="all" '
+        f'onclick="setChannel(\'all\')">全部 <b>{len(rows)}</b></button>'
+    ]
+    for c in CHANNELS:
+        if c in counts:
+            chips.append(
+                f'<button type="button" class="ch-chip" data-c="{_esc(c)}" '
+                f'onclick="setChannel(\'{_esc(c)}\')">{_esc(c)} <b>{counts[c]}</b></button>'
+            )
+    return (
+        '<div class="ch-filters" role="group" aria-label="銷售通路篩選">'
+        '<span class="ch-label">通路：</span>' + "".join(chips) + "</div>" + CHANNEL_JS
+    )
 
 
 def render_report(
@@ -467,6 +530,8 @@ def render_report(
     nav_html: str = "",
     series: dict[str, list[TrendPoint]] | None = None,
     trend_window: int = DEFAULT_WINDOW,
+    rank_limit: int | None = None,
+    show_channel_filter: bool = False,
 ) -> str:
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
     funds = analysis.get("funds", [])
@@ -485,13 +550,22 @@ def render_report(
 
     if compact:
         # 精簡版：僅前 50 名排名表（歷史 archive 頁，控制體積）
-        rank_limit = 50
-        rank_label = f"前 {rank_limit} 名排名"
+        limit = 50
+        rank_label = f"前 {limit} 名排名"
+    elif rank_limit is not None:
+        limit = rank_limit
+        rank_label = (
+            f"前 {limit} 名排名（完整排名見 "
+            '<a href="ranking.html" style="color:var(--brand)">ranking.html</a>）'
+        )
     else:
-        rank_limit = 0
+        limit = 0
         rank_label = f"完整排名表（{total} 檔）"
 
-    rank_rows = _ranking_rows(analysis, nav_by_code, limit=rank_limit)
+    channel_filter_html = (
+        _channel_filter_html(funds, limit) if (show_channel_filter and not compact) else ""
+    )
+    rank_rows = _ranking_rows(analysis, nav_by_code, limit=limit)
 
     return f"""<!DOCTYPE html>
 <html lang="zh-Hant">
@@ -519,6 +593,7 @@ def render_report(
 
 <h2>基金排名</h2>
 <p style="font-size:13px;color:var(--mut)">依 AI 初評分（動能 + 新聞聲量）排序；前段基金另有 LLM 深度分析。</p>
+{channel_filter_html}
 <details>
 <summary><span class="g">▶</span> 展開／收合{rank_label}</summary>
 <div style="max-height:480px;overflow:auto;border-radius:8px">
@@ -555,7 +630,14 @@ def render_report(
 def generate_report(date: str, out_file: Path | None = None) -> Path:
     analysis, nav_by_code = load_report_data(date)
     series = build_time_series()
-    html_out = render_report(analysis, nav_by_code, date, series=series)
+    html_out = render_report(
+        analysis,
+        nav_by_code,
+        date,
+        series=series,
+        rank_limit=INDEX_RANK_LIMIT,
+        show_channel_filter=True,
+    )
     path = out_file or REPORT_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(html_out, encoding="utf-8")
@@ -608,11 +690,72 @@ def generate_archive(docs_dir: Path | None = None) -> tuple[Path, list[Path]]:
             calendar_html=_calendar_panel(dates, latest, base="archive/"),
             nav_html=_navbar_html(is_latest=True, date=latest),
             series=series,
+            rank_limit=INDEX_RANK_LIMIT,
+            show_channel_filter=True,
         ),
         encoding="utf-8",
     )
     generate_trends(docs_dir=docs_dir, series=series)
+    generate_ranking(docs_dir=docs_dir)
     return index, pages
+
+
+def _render_ranking_page(
+    analysis: dict,
+    nav_by_code: dict[str, dict],
+    date: str,
+    nav_html: str,
+) -> str:
+    """完整排名頁（最新 2,128 列 + 通路 filter）。"""
+    now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
+    funds = analysis.get("funds", [])
+    filter_html = _channel_filter_html(funds, 0)
+    rank_rows = _ranking_rows(analysis, nav_by_code, limit=0)
+    return f"""<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AlphaFund-Daily 完整排名｜{_esc(date)}</title>
+<style>{CSS}</style>
+</head>
+<body>
+{nav_html}
+<div class="wrap">
+<header>
+<h1>🏆 完整排名表</h1>
+<div class="meta">報告日期：{_esc(date)} ｜ 全體 {len(funds)} 檔（三通路 × USD）｜ 頁面生成：{_esc(now)}（Asia/Taipei）</div>
+</header>
+<p style="font-size:13px;color:var(--mut)">依 AI 初評分（動能 + 新聞聲量）排序之完整排名；點通路可篩選上架通路。</p>
+{filter_html}
+<div style="max-height:70vh;overflow:auto;border-radius:8px">
+<table>
+<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th></tr></thead>
+<tbody>{rank_rows}</tbody>
+</table></div>
+<footer>
+<p><b>免責聲明：</b>本表由自動化程式與 AI 模型（Gemini API）生成，僅供學術研究與個人資產管理參考，不構成任何投資招攬、要約或決策依據。</p>
+</footer>
+</div>
+</body>
+</html>"""
+
+
+def generate_ranking(docs_dir: Path | None = None) -> Path:
+    """生成 docs/ranking.html（最新完整排名表，僅覆寫一份）。"""
+    docs_dir = docs_dir or PROJECT_ROOT / "docs"
+    dates = _available_dates()
+    if not dates:
+        raise FileNotFoundError("data/history 下無可生成之分析資料")
+    latest = dates[-1]
+    analysis, nav_by_code = load_report_data(latest)
+    nav_html = _navbar_html(is_latest=True, date=latest, active="ranking")
+    path = docs_dir / "ranking.html"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        _render_ranking_page(analysis, nav_by_code, latest, nav_html), encoding="utf-8"
+    )
+    return path
 
 
 def _trends_navbar_html() -> str:
@@ -622,6 +765,7 @@ def _trends_navbar_html() -> str:
         '<span class="brand">AlphaFund-Daily</span>'
         '<span class="nav-links">'
         '<a href="index.html">最新報告</a>'
+        '<a href="ranking.html">🏆 完整排名</a>'
         '<a class="active" href="trends.html">📈 趨勢</a>'
         "</span></div></nav>"
     )

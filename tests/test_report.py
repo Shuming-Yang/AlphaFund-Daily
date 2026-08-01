@@ -1,7 +1,12 @@
 """報告生成器測試。"""
 from __future__ import annotations
 
-from alphafund.report import _navbar_html, render_calendar, render_report
+from alphafund.report import (
+    _channel_filter_html,
+    _navbar_html,
+    render_calendar,
+    render_report,
+)
 from alphafund.trends import TrendPoint
 
 
@@ -208,3 +213,81 @@ def test_navbar_has_trends_link():
     assert "📈 趨勢" in latest
     archive = _navbar_html(is_latest=False, date="2026-08-01")
     assert 'href="../trends.html"' in archive
+
+
+def test_navbar_has_ranking_link():
+    latest = _navbar_html(is_latest=True, date="2026-08-01")
+    assert 'href="ranking.html"' in latest
+    assert "🏆 完整排名" in latest
+    archive = _navbar_html(is_latest=False, date="2026-08-01")
+    assert 'href="../ranking.html"' in archive
+
+
+def test_navbar_active_ranking():
+    html = _navbar_html(is_latest=True, date="2026-08-01", active="ranking")
+    assert 'class="active" href="ranking.html"' in html
+    assert 'class="active" href="index.html"' not in html
+
+
+def test_render_report_rank_limit_label():
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01", rank_limit=100
+    )
+    assert "前 100 名排名" in html
+    assert 'href="ranking.html"' in html
+
+
+def test_ranking_rows_have_data_ch():
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
+    # 樣本基金通路 0352 三通路、X9 無通路
+    assert '<tr data-ch="元大證券,匯豐銀行,渣打銀行">' in html
+    assert '<tr data-ch="">' in html
+
+
+def test_detail_card_has_data_ch():
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
+    assert 'id="fund-0352" data-ch="元大證券,匯豐銀行,渣打銀行"' in html
+
+
+def test_channel_filter_html_counts():
+    funds = [
+        {"channels": ["元大證券", "匯豐銀行"]},
+        {"channels": ["元大證券"]},
+        {"channels": ["渣打銀行"]},
+    ]
+    html = _channel_filter_html(funds, 0)
+    assert "ch-chip" in html
+    assert "全部 <b>3</b>" in html
+    assert "元大證券 <b>2</b>" in html
+    assert "匯豐銀行 <b>1</b>" in html
+    assert "渣打銀行 <b>1</b>" in html
+    assert "setChannel" in html  # vanilla JS 內嵌
+
+
+def test_channel_filter_html_limits_to_rows():
+    funds = [
+        {"channels": ["元大證券"]},
+        {"channels": ["匯豐銀行"]},
+        {"channels": ["渣打銀行"]},
+    ]
+    html = _channel_filter_html(funds, 2)
+    assert "全部 <b>2</b>" in html
+    assert "渣打銀行" not in html  # 第 3 檔不在前 2 列
+
+
+def test_render_report_channel_filter_injected():
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01",
+        rank_limit=100, show_channel_filter=True,
+    )
+    assert 'class="ch-filters"' in html
+    assert "銷售通路篩選" in html
+    assert "setChannel" in html
+
+
+def test_render_report_compact_no_channel_filter():
+    html = render_report(
+        _sample_data(), _sample_nav(), "2026-08-01",
+        compact=True, show_channel_filter=True,
+    )
+    assert 'class="ch-filters"' not in html
