@@ -853,7 +853,7 @@ def _render_ranking_page(
 <p style="font-size:13px;color:var(--mut)">依 AI 初評分（動能 + 新聞聲量）排序之完整排名；點通路可篩選上架通路。</p>
 {filter_html}
 <div style="max-height:70vh;overflow:auto;border-radius:8px">
-<table class="rank">
+<table>
 <thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th>通路</th></tr></thead>
 <tbody>{rank_rows}</tbody>
 </table></div>
