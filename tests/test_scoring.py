@@ -195,67 +195,106 @@ def test_stability_score():
     assert abs(stability_score(f2) - 4 / 6) < 1e-9  # 4/6 正
 
 
-def test_preliminary_score_income_bonus():
+def test_preliminary_score_income_bonus_no_data():
+    """配息型但無配息資料 → 無資料保底 5。"""
     f = _fund(name="聯博全球非投資等級債券基金-TA類型(穩定月配)(美元)", returns={k: "0" for k in ("navValue5", "navValue6", "navValue7", "navValue8")})
     score, breakdown = preliminary_score(f, [])
-    # 配息型但無配息資料 → 保守底分 3（收入加分）；成長/穩定無資料 → 0
-    assert breakdown["income_bonus"] == 3.0
     assert breakdown["income_class"] == "配息型"
+    assert breakdown["income_bonus"] == 5.0  # NO_DATA_FLOOR
     assert breakdown["yield_pct"] == 0.0
-    assert score == 3.0
+    assert score == 5.0
 
 
 def test_income_bonus_scales_with_yield():
-    f = _fund(
-        code="0385",
-        name="富蘭克林坦伯頓全球投資系列-亞洲債券基金美元A(Mdis)股",
-        nav="6.980000",
-        dividends=[
-            DividendRecord(fund_code="0385", base_date="2026/01/30", amount=0.031),
-            DividendRecord(fund_code="0385", base_date="2026/02/27", amount=0.029),
-            DividendRecord(fund_code="0385", base_date="2026/03/31", amount=0.032),
-            DividendRecord(fund_code="0385", base_date="2026/04/30", amount=0.030),
-            DividendRecord(fund_code="0385", base_date="2026/05/29", amount=0.031),
-            DividendRecord(fund_code="0385", base_date="2026/06/30", amount=0.030),
-            DividendRecord(fund_code="0385", base_date="2026/07/31", amount=0.031),
-            DividendRecord(fund_code="0385", base_date="2025/08/29", amount=0.031),
-            DividendRecord(fund_code="0385", base_date="2025/09/30", amount=0.029),
-            DividendRecord(fund_code="0385", base_date="2025/10/31", amount=0.032),
-            DividendRecord(fund_code="0385", base_date="2025/11/28", amount=0.030),
-            DividendRecord(fund_code="0385", base_date="2025/12/31", amount=0.031),
-        ],
-    )
-    yield_val = f.annualized_yield()
-    assert yield_val is not None
-    assert abs(yield_val - 5.26) < 0.02
+    """資料齊全且高收益占比 → 依有效配息率加分（有效 5.26% × 2.0 = 10.52）。"""
+    divs = [
+        DividendRecord(fund_code="0385", base_date="2026/01/30", amount=0.031, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2026/02/27", amount=0.029, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2026/03/31", amount=0.032, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2026/04/30", amount=0.030, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2026/05/29", amount=0.031, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2026/06/30", amount=0.030, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2026/07/31", amount=0.031, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2025/08/29", amount=0.031, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2025/09/30", amount=0.029, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2025/10/31", amount=0.032, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2025/11/28", amount=0.030, income_ratio=100.0),
+        DividendRecord(fund_code="0385", base_date="2025/12/31", amount=0.031, income_ratio=100.0),
+    ]
+    f = _fund(code="0385", name="富蘭克林坦伯頓全球投資系列-亞洲債券基金美元A(Mdis)股",
+              nav="6.980000", dividends=divs)
+    raw = f.annualized_yield()
+    assert raw is not None
+    assert abs(raw - 5.26) < 0.02
+    assert f.income_quality() == 1.0
+    assert f.effective_yield() is not None
     _, breakdown = preliminary_score(f, [])
     assert breakdown["income_class"] == "配息型"
-    assert breakdown["income_bonus"] == 7.9  # 5.26 × 1.5 ≈ 7.89 → 7.9
+    assert breakdown["effective_yield_pct"] == 5.26
+    assert breakdown["income_quality"] == 1.0
+    assert breakdown["income_bonus"] == 10.5  # 5.26 × 2.0 = 10.52 → 10.5
 
 
 def test_income_bonus_yield_capped():
-    f = _fund(
-        code="B",
-        name="某高配息基金美元(月配)",
-        nav="10.000000",
-        dividends=[
-            DividendRecord(fund_code="B", base_date="2026/01/30", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2026/02/27", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2026/03/31", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2026/04/30", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2026/05/29", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2026/06/30", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2026/07/31", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2025/08/29", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2025/09/30", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2025/10/31", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2025/11/28", amount=1.0),
-            DividendRecord(fund_code="B", base_date="2025/12/31", amount=1.0),
-        ],
-    )
-    # 12M 配 12 → 配息率 120% → 加分封頂 10
+    """高有效配息率 → 加分封頂 15。"""
+    divs = [
+        DividendRecord(fund_code="B", base_date="2026/01/30", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2026/02/27", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2026/03/31", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2026/04/30", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2026/05/29", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2026/06/30", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2026/07/31", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2025/08/29", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2025/09/30", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2025/10/31", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2025/11/28", amount=1.0, income_ratio=100.0),
+        DividendRecord(fund_code="B", base_date="2025/12/31", amount=1.0, income_ratio=100.0),
+    ]
+    f = _fund(code="B", name="某高配息基金美元(月配)", nav="10.000000", dividends=divs)
+    # 12M 配 12 → 名目配息率 120% → 有效配息率 120% → 加分封頂 15
     _, breakdown = preliminary_score(f, [])
-    assert breakdown["income_bonus"] == 10.0
+    assert breakdown["income_bonus"] == 15.0
+
+
+def test_income_bonus_principal_discount_floor():
+    """資料齊全且全本金（income_ratio=0）→ 有效配息 0 → 真本金保底 3。"""
+    divs = [
+        DividendRecord(fund_code="G", base_date="2026/01/30", amount=0.5, income_ratio=0.0),
+        DividendRecord(fund_code="G", base_date="2026/02/27", amount=0.5, income_ratio=0.0),
+        DividendRecord(fund_code="G", base_date="2026/03/31", amount=0.5, income_ratio=0.0),
+    ]
+    f = _fund(code="G", name="某總報酬配息基金美元(月配)", nav="10.000000", dividends=divs)
+    assert f.income_quality() == 0.0
+    assert f.effective_yield() == 0.0
+    _, breakdown = preliminary_score(f, [])
+    assert breakdown["income_bonus"] == 3.0  # PRINCIPAL_FLOOR（不歸零）
+
+
+def test_income_bonus_missing_ratio_floor():
+    """有配息但缺比例資料 → 折半（income_quality=0.5）→ MISSING_FLOOR 保底 4。"""
+    divs = [
+        DividendRecord(fund_code="M", base_date="2026/01/30", amount=0.1),
+        DividendRecord(fund_code="M", base_date="2026/02/27", amount=0.1),
+    ]
+    f = _fund(code="M", name="某入息基金美元(月配)", nav="10.000000", dividends=divs)
+    assert f.income_quality() == 0.5
+    eff = f.effective_yield()
+    assert eff is not None and abs(eff - 1.0) < 1e-9  # 名目 2% × 0.5 = 1%
+    _, breakdown = preliminary_score(f, [])
+    assert breakdown["income_bonus"] == 4.0  # MISSING_FLOOR
+
+
+def test_income_bonus_complete_low_yield_floor():
+    """資料齊全但低有效配息率 → 依公式低於 COMPLETE_FLOOR → 保底 7。"""
+    divs = [
+        DividendRecord(fund_code="C", base_date="2026/01/30", amount=0.1, income_ratio=100.0),
+        DividendRecord(fund_code="C", base_date="2026/02/27", amount=0.1, income_ratio=100.0),
+    ]
+    f = _fund(code="C", name="某低配息基金美元(月配)", nav="10.000000", dividends=divs)
+    # 名目 2%，品質 1.0 → 有效 2% → 2×2.0=4 < 7 → 保底 7
+    _, breakdown = preliminary_score(f, [])
+    assert breakdown["income_bonus"] == 7.0
 
 
 def test_non_dividend_fund_no_income_bonus():

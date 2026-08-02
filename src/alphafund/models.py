@@ -6,6 +6,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
+from .config import INCOME_QUALITY_UNKNOWN
+
 
 def _parse_amount(value: object) -> float:
     """解析 TDCC 配息金額（"-9999" 表無資料 → 0.0）。"""
@@ -86,22 +88,60 @@ class Fund(BaseModel):
     invest_type: str = ""       # 投資類型（區域/產業）
 
     def annualized_yield(self, months: int = 12) -> float | None:
-        """近 N 個月配息率（%）：Σ每單位配息 / 最新淨值 × 100。
+        """近 N 個月名目配息率（%）：Σ每單位配息 / 最新淨值 × 100。
 
         無淨值、無配息、或淨值非正數時回傳 None。
         """
         if not self.dividends:
             return None
-        try:
-            nav = float(self.nav)
-        except (TypeError, ValueError):
-            return None
-        if nav <= 0:
+        nav = self._nav_float()
+        if nav is None or nav <= 0:
             return None
         total = sum(d.amount for d in self.dividends if d.amount > 0)
         if total <= 0:
             return None
         return round(total / nav * 100.0, 2)
+
+    def _nav_float(self) -> float | None:
+        """解析最新淨值（容忍千分位逗號 / N/A）。"""
+        if not self.nav:
+            return None
+        try:
+            return float(str(self.nav).replace(",", "").strip())
+        except (TypeError, ValueError):
+            return None
+
+    def income_quality(self) -> float:
+        """配息來源品質（0–1）：配息金額加權平均「收益來源比例」。
+
+        - 有 income_ratio 之紀錄按實際比例計。
+        - 缺比例資料之紀錄視為 INCOME_QUALITY_UNKNOWN（折半）。
+        - 無任何配息時回傳 1.0（不影響無配息基金）。
+        """
+        if not self.dividends:
+            return 1.0
+        total = sum(d.amount for d in self.dividends if d.amount > 0)
+        if total <= 0:
+            return 1.0
+        inc = 0.0
+        for d in self.dividends:
+            if d.amount <= 0:
+                continue
+            if d.income_ratio is not None:
+                inc += d.amount * (d.income_ratio / 100.0)
+            else:
+                inc += d.amount * INCOME_QUALITY_UNKNOWN
+        return round(inc / total, 4)
+
+    def effective_yield(self, months: int = 12) -> float | None:
+        """有效配息率（%）：名目配息率 × 收益品質（真正的被動收入）。
+
+        配息全部來自本金時有效配息率為 0.0；無配息資料時為 None。
+        """
+        raw = self.annualized_yield(months)
+        if raw is None:
+            return None
+        return round(raw * self.income_quality(), 2)
 
 
 class NewsItem(BaseModel):

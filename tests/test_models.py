@@ -57,3 +57,45 @@ def test_annualized_yield_no_data_or_invalid_nav():
     assert f2.annualized_yield() is None
     f3 = Fund(fund_code="C", name="X", nav="0", dividends=[DividendRecord(fund_code="C", amount=0.1)])
     assert f3.annualized_yield() is None
+
+
+def test_annualized_yield_handles_thousand_comma_nav():
+    """NAV 含千分位逗號仍可解析。"""
+    f = Fund(
+        fund_code="A",
+        name="某高淨值基金",
+        nav="1,037.770000",
+        dividends=[DividendRecord(fund_code="A", amount=10.0), DividendRecord(fund_code="A", amount=10.0)],
+    )
+    assert f.annualized_yield() == 1.93  # 20 / 1037.77 × 100
+
+
+def test_income_quality_missing_ratio_half():
+    """缺比例資料之紀錄視為 50% 收益。"""
+    f = Fund(
+        fund_code="A",
+        name="某入息基金",
+        nav="10",
+        dividends=[
+            DividendRecord(fund_code="A", amount=0.1),                      # 缺比例 → 0.5
+            DividendRecord(fund_code="A", amount=0.1, income_ratio=100.0),  # 全收益
+        ],
+    )
+    assert f.income_quality() == 0.75  # (0.1×0.5 + 0.1×1.0)/0.2
+    assert f.effective_yield() == 1.5  # 名目 2% × 0.75
+
+
+def test_income_quality_principal_discount():
+    """配息全來自本金（income_ratio=0）→ 品質 0、有效配息 0。"""
+    f = Fund(
+        fund_code="G",
+        name="某總報酬配息基金",
+        nav="10",
+        dividends=[
+            DividendRecord(fund_code="G", amount=0.5, income_ratio=0.0),
+            DividendRecord(fund_code="G", amount=0.5, income_ratio=0.0),
+        ],
+    )
+    assert f.income_quality() == 0.0
+    assert f.effective_yield() == 0.0
+    assert f.annualized_yield() == 10.0  # 名目配息率不變

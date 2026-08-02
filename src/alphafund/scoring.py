@@ -21,7 +21,10 @@ from .config import (
     GROWTH_MAX,
     GROWTH_WEIGHTS,
     INCOME_BONUS,
-    INCOME_BONUS_UNKNOWN,
+    INCOME_BONUS_COMPLETE_FLOOR,
+    INCOME_BONUS_MISSING_FLOOR,
+    INCOME_BONUS_NO_DATA_FLOOR,
+    INCOME_BONUS_PRINCIPAL_FLOOR,
     INCOME_YIELD_PER_POINT,
     LEVERAGE_PENALTY,
     RISK_BONUS_RR,
@@ -242,20 +245,34 @@ def _clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
 
 
 def income_bonus_from_yield(fund: Fund, income_cls: str) -> tuple[float, float | None]:
-    """收入加分（0–10）：依實際近 12M 配息率分級。
+    """收入加分（0–INCOME_BONUS）：依有效配息率分級 + 四級保底。
 
-    - 有配息率（>0）→ min(上限, 配息率 × INCOME_YIELD_PER_POINT)。
-    - 配息型但無配息資料 → 保守底分 INCOME_BONUS_UNKNOWN。
-    - 其餘 → 0。
-    回傳 (加分, 配息率%)。
+    有效配息率 = 名目配息率 × 收益品質（本金配息打折）。
+    保底層級（資料完整度/收益品質）：
+    - 無配息資料（配息型）→ NO_DATA_FLOOR；非配息型 → 0。
+    - 資料齊全且非全本金 → COMPLETE_FLOOR。
+    - 資料齊全且全本金 → PRINCIPAL_FLOOR。
+    - 有配息但缺比例資料 → MISSING_FLOOR。
+    回傳 (加分, 有效配息率%)。
     """
-    yield_pct = fund.annualized_yield()
-    if yield_pct is not None and yield_pct > 0:
-        bonus = min(INCOME_BONUS, yield_pct * INCOME_YIELD_PER_POINT)
-        return round(bonus, 1), yield_pct
-    if income_cls == "配息型":
-        return INCOME_BONUS_UNKNOWN, yield_pct
-    return 0.0, yield_pct
+    if not fund.dividends:
+        return (INCOME_BONUS_NO_DATA_FLOOR if income_cls == "配息型" else 0.0), None
+
+    eff = fund.effective_yield()
+    quality = fund.income_quality()
+    all_ratio = all(d.income_ratio is not None for d in fund.dividends)
+
+    if all_ratio and quality <= 1e-9:
+        floor = INCOME_BONUS_PRINCIPAL_FLOOR      # 真本金
+    elif all_ratio:
+        floor = INCOME_BONUS_COMPLETE_FLOOR       # 完整
+    else:
+        floor = INCOME_BONUS_MISSING_FLOOR        # 折半（缺比例資料）
+
+    if eff is not None and eff > 0:
+        scaled = min(INCOME_BONUS, eff * INCOME_YIELD_PER_POINT)
+        return round(max(scaled, floor), 1), eff
+    return floor, eff  # 有效收益為 0（全本金）→ 保底
 
 
 def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str, float]]:
@@ -275,6 +292,7 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
     risk_bonus = RISK_BONUS_RR.get(fund.risk_level or "", 0.0)
     lev_penalty = -LEVERAGE_PENALTY if is_leveraged_name(fund.name) else 0.0
 
+    raw_yield = fund.annualized_yield() if fund.dividends else None
     total = round(_clamp(g + s + score_n + income_bonus + risk_bonus + lev_penalty, 0.0, 100.0), 1)
     breakdown = {
         "growth_score": round(g, 2),
@@ -289,7 +307,9 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
         "risk_level": fund.risk_level or "",
         "asset_class": fund.asset_class or "",
         "income_class": income_cls,
-        "yield_pct": round(yield_pct, 2) if yield_pct is not None else 0.0,
+        "yield_pct": round(raw_yield, 2) if raw_yield is not None else 0.0,
+        "effective_yield_pct": round(yield_pct, 2) if yield_pct is not None else 0.0,
+        "income_quality": round(fund.income_quality(), 3),
         "long_term_return": round(lt, 4) if lt is not None else 0.0,
         "news_count": float(n),
     }

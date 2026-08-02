@@ -131,9 +131,14 @@ RANKING_LIMIT = int(os.environ.get("RANKING_LIMIT", "500"))
 
 # 投資模式（預設：長期投資 + 被動收入）
 INVESTMENT_MODE = os.environ.get("INVESTMENT_MODE", "income_long_term")
-INCOME_BONUS = float(os.environ.get("INCOME_BONUS", "10"))   # 配息收入加分上限
-INCOME_YIELD_PER_POINT = float(os.environ.get("INCOME_YIELD_PER_POINT", "1.5"))  # 每 1% 配息率折算分數（6.7% → 滿分）
-INCOME_BONUS_UNKNOWN = float(os.environ.get("INCOME_BONUS_UNKNOWN", "3"))  # 配息型但無配息資料之保守底分
+INCOME_BONUS = float(os.environ.get("INCOME_BONUS", "15"))   # 配息收入加分上限
+INCOME_YIELD_PER_POINT = float(os.environ.get("INCOME_YIELD_PER_POINT", "2.0"))  # 每 1% 有效配息率折算分數（7.5% → 滿分）
+INCOME_QUALITY_UNKNOWN = float(os.environ.get("INCOME_QUALITY_UNKNOWN", "0.5"))  # 缺本金/收益比例之配息紀錄，視為 50% 收益
+# 配息收入加分保底（依資料完整度與收益品質分級）
+INCOME_BONUS_COMPLETE_FLOOR = float(os.environ.get("INCOME_BONUS_COMPLETE_FLOOR", "7"))   # 完整：資料齊全且非全本金
+INCOME_BONUS_NO_DATA_FLOOR = float(os.environ.get("INCOME_BONUS_NO_DATA_FLOOR", "5"))     # 無配息資料（配息型）
+INCOME_BONUS_MISSING_FLOOR = float(os.environ.get("INCOME_BONUS_MISSING_FLOOR", "4"))     # 折半：有配息但缺比例資料
+INCOME_BONUS_PRINCIPAL_FLOOR = float(os.environ.get("INCOME_BONUS_PRINCIPAL_FLOOR", "3")) # 真本金：資料齊全且全本金
 STABILITY_MAX = float(os.environ.get("STABILITY_MAX", "5"))  # 穩定加分上限
 
 # 配息率計算：近 N 個月配息總額 / 最新淨值

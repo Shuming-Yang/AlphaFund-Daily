@@ -507,13 +507,17 @@ def _detail_card(
     )
     income_cls = income_class_from_name(fa.get("name", ""))
     income_suit = da.get("income_suitability") or ""
-    yield_pct = pb.get("yield_pct") or 0.0
+    eff_yield = pb.get("effective_yield_pct") or 0.0
+    raw_yield = pb.get("yield_pct") or 0.0
+    quality = pb.get("income_quality") or 0.0
     risk_level = pb.get("risk_level") or ""
     income_tag = f"<br>收益取向：{income_cls}"
     if risk_level:
         income_tag += f" ｜ 風險等級 {_esc(risk_level)}"
-    if yield_pct and yield_pct > 0:
-        income_tag += f" ｜ 近12M配息率 {yield_pct:.2f}%"
+    if eff_yield and eff_yield > 0:
+        income_tag += f" ｜ 近12M配息率 {eff_yield:.2f}%"
+        if quality < 1:
+            income_tag += f"（名目 {raw_yield:.2f}% ／收益占比 {quality * 100:.0f}%）"
     if income_suit:
         income_tag += f" ｜ 被動收入適合度：{income_suit}"
 
@@ -564,10 +568,14 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
             break
         ch = ",".join(fa.get("channels", []))
         search = _esc(f"{fa['name']} {fa['fund_code']}".lower())
-        yield_pct = (fa.get("preliminary_breakdown") or {}).get("yield_pct") or 0.0
-        yield_tag = (
-            f'<span class="yield-tag">配息率 {yield_pct:.2f}%</span>' if yield_pct and yield_pct > 0 else ""
-        )
+        eff_yield = (fa.get("preliminary_breakdown") or {}).get("effective_yield_pct") or 0.0
+        quality = (fa.get("preliminary_breakdown") or {}).get("income_quality") or 0.0
+        yield_tag = ""
+        if eff_yield and eff_yield > 0:
+            yield_tag = f'<span class="yield-tag">配息率 {eff_yield:.2f}%'
+            if quality < 1:
+                yield_tag += f'<small>（收益{quality * 100:.0f}%）</small>'
+            yield_tag += "</span>"
         risk_level = (fa.get("preliminary_breakdown") or {}).get("risk_level") or ""
         rr_tag = f'<span class="rr-tag">{_esc(risk_level)}</span>' if risk_level else ""
         rows.append(
