@@ -4,10 +4,10 @@ from __future__ import annotations
 from alphafund.report import (
     INDEX_RANK_LIMIT,
     RANK_JUMP_THRESHOLD,
-    _channel_filter_html,
     _channel_stats,
     _navbar_html,
     _rank_delta_cell,
+    _rank_toolbar_html,
     _trend_mini_table,
     render_calendar,
     render_report,
@@ -298,8 +298,17 @@ def test_render_report_rank_limit_label():
 def test_ranking_rows_have_data_ch():
     html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
     # 樣本基金通路 0352 三通路、X9 無通路
-    assert '<tr data-ch="元大證券,匯豐銀行,渣打銀行">' in html
-    assert '<tr data-ch="">' in html
+    assert '<tr data-ch="元大證券,匯豐銀行,渣打銀行"' in html
+    assert '<tr data-ch=""' in html
+
+
+def test_ranking_rows_have_code_subtitle_and_data_search():
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
+    # 代號副標（名稱下方）
+    assert '<span class="code">0352</span>' in html
+    # data-search 供名稱/代號比對（lowercase）
+    assert 'data-search="' in html
+    assert "富蘭克林坦伯頓全球投資系列-日本基金美元a (acc)股 0352" in html
 
 
 def test_detail_card_has_data_ch():
@@ -307,14 +316,21 @@ def test_detail_card_has_data_ch():
     assert 'id="fund-0352" data-ch="元大證券,匯豐銀行,渣打銀行"' in html
 
 
-def test_channel_filter_html_counts():
+def test_rank_toolbar_has_search_box():
+    html = _rank_toolbar_html(_sample_data()["funds"], 0, show_channel=True)
+    assert 'class="rank-search"' in html
+    assert 'placeholder="🔍 搜尋名稱或代號"' in html
+    assert "setSearch" in html
+    assert "ch-chip" in html  # 通路篩選亦存在
+
+
+def test_rank_toolbar_counts():
     funds = [
         {"channels": ["元大證券", "匯豐銀行"]},
         {"channels": ["元大證券"]},
         {"channels": ["渣打銀行"]},
     ]
-    html = _channel_filter_html(funds, 0)
-    assert "ch-chip" in html
+    html = _rank_toolbar_html(funds, 0, show_channel=True)
     assert "全部 <b>3</b>" in html
     assert "元大證券 <b>2</b>" in html
     assert "匯豐銀行 <b>1</b>" in html
@@ -322,13 +338,20 @@ def test_channel_filter_html_counts():
     assert "setChannel" in html  # vanilla JS 內嵌
 
 
-def test_channel_filter_html_limits_to_rows():
+def test_rank_toolbar_without_channel():
+    html = _rank_toolbar_html(_sample_data()["funds"], 0, show_channel=False)
+    assert 'class="rank-search"' in html
+    # 未渲染通路 chip 按鈕（JS 中的 .ch-chip 字串屬正常程式碼）
+    assert 'class="ch-chip' not in html
+
+
+def test_rank_toolbar_limits_to_rows():
     funds = [
         {"channels": ["元大證券"]},
         {"channels": ["匯豐銀行"]},
         {"channels": ["渣打銀行"]},
     ]
-    html = _channel_filter_html(funds, 2)
+    html = _rank_toolbar_html(funds, 2, show_channel=True)
     assert "全部 <b>2</b>" in html
     assert "渣打銀行" not in html  # 第 3 檔不在前 2 列
 

@@ -142,6 +142,12 @@ td.cmp-miss{color:#b0b6bd;text-align:center}
 .ch-badges{display:inline-flex;justify-content:flex-end;gap:3px;flex-wrap:wrap;align-items:center}
 .ch-icon{display:inline-flex;line-height:0;vertical-align:middle}
 .ch-icon svg{display:block}
+.code{display:block;font-size:11px;color:var(--mut);font-weight:400}
+.code-sum{font-size:11px;color:var(--mut);margin-left:6px}
+.rank-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
+.rank-search{padding:6px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;
+background:var(--card);color:var(--ink);min-width:220px;flex:1 1 240px}
+.rank-search:focus{outline:2px solid var(--brand);outline-offset:-1px}
 .jump-up{background:#d3f0dd;color:var(--pos);font-weight:700;border-radius:6px;padding:1px 6px;white-space:nowrap}
 .jump-down{background:#f7d6d6;color:var(--neg);font-weight:700;border-radius:6px;padding:1px 6px;white-space:nowrap}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
@@ -461,9 +467,11 @@ def _detail_card(
     nav = nav_by_code.get(fa["fund_code"], {})
     score = da.get("value_score")
     score_txt = f"{score:.0f}" if score is not None else "-"
+    search = _esc(f"{fa['name']} {fa['fund_code']}".lower())
 
-    return f"""<details id="fund-{_esc(fa['fund_code'])}" data-ch="{_esc(','.join(fa.get('channels', [])))}">
+    return f"""<details id="fund-{_esc(fa['fund_code'])}" data-ch="{_esc(','.join(fa.get('channels', [])))}" data-search="{search}">
 <summary><span class="g">#{fa['rank']}</span>{_esc(name)}
+<span class="code-sum">{_esc(fa['fund_code'])}</span>
 　<span class="rating r-{_esc(rating)}">{_esc(rating)}</span>
  <span class="num">深度分數 {score_txt} · 初評分 {fa['preliminary_score']}</span>
  {_channel_badges(fa.get('channels') or [])}</summary>
@@ -498,9 +506,12 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
         sentiment = da.get("market_sentiment") or "—"
         sent_cls = {"Positive": "sent-p", "Negative": "sent-n"}.get(sentiment, "sent-u")
         ch = ",".join(fa.get("channels", []))
+        search = _esc(f"{fa['name']} {fa['fund_code']}".lower())
         rows.append(
-            f"<tr data-ch=\"{_esc(ch)}\"><td class=\"num\">{fa['rank']}</td>"
-            f"<td><a href=\"#fund-{_esc(fa['fund_code'])}\">{_esc(fa['name'])}</a></td>"
+            f"<tr data-ch=\"{_esc(ch)}\" data-search=\"{search}\">"
+            f"<td class=\"num\">{fa['rank']}</td>"
+            f"<td><a href=\"#fund-{_esc(fa['fund_code'])}\">{_esc(fa['name'])}</a>"
+            f"<span class=\"code\">{_esc(fa['fund_code'])}</span></td>"
             f"<td class=\"num\">{fa['preliminary_score']}</td>"
             f"<td class=\"num\">{deep_txt}</td>"
             f"<td>{f'<span class=\"rating r-{_esc(rating)}\">{_esc(rating)}</span>' if rating else '—'}</td>"
@@ -513,43 +524,64 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
 
 CHANNEL_JS = """<script>
 (function(){
+  window._ch = 'all';
+  window._q = '';
+  var sel = function(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); };
+  function matches(el){
+    if (window._ch !== 'all') {
+      var chs = (el.getAttribute('data-ch')||'').split(',');
+      if (chs.indexOf(window._ch) < 0) return false;
+    }
+    var q = window._q;
+    if (!q) return true;
+    return (el.getAttribute('data-search')||'').toLowerCase().indexOf(q) >= 0;
+  }
+  window.applyFilters = function(){
+    sel('tr[data-search]').forEach(function(tr){ tr.style.display = matches(tr) ? '' : 'none'; });
+    sel('details[data-search]').forEach(function(d){ d.style.display = matches(d) ? '' : 'none'; });
+  };
   window.setChannel = function(c){
-    var sel = function(sel){ return Array.prototype.slice.call(document.querySelectorAll(sel)); };
-    sel('tr[data-ch]').forEach(function(tr){
-      tr.style.display = (c==='all' || (tr.getAttribute('data-ch')||'').split(',').indexOf(c)>=0) ? '' : 'none';
-    });
-    sel('details[data-ch]').forEach(function(d){
-      d.style.display = (c==='all' || (d.getAttribute('data-ch')||'').split(',').indexOf(c)>=0) ? '' : 'none';
-    });
-    sel('.ch-chip').forEach(function(b){
-      b.classList.toggle('active', b.getAttribute('data-c')===c);
-    });
+    window._ch = c;
+    applyFilters();
+    sel('.ch-chip').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-c')===c); });
+  };
+  window.setSearch = function(q){
+    window._q = (q||'').toLowerCase().trim();
+    applyFilters();
   };
 })();
 </script>"""
 
 
-def _channel_filter_html(funds: list[dict], limit: int = 0) -> str:
-    """銷售通路 filter chips（依目前排名清單計數）。"""
-    rows = funds[:limit] if limit else funds
-    counts: dict[str, int] = {}
-    for f in rows:
-        for c in f.get("channels", []):
-            counts[c] = counts.get(c, 0) + 1
-    chips = [
-        f'<button type="button" class="ch-chip active" data-c="all" '
-        f'onclick="setChannel(\'all\')">全部 <b>{len(rows)}</b></button>'
+def _rank_toolbar_html(
+    funds: list[dict], limit: int = 0, show_channel: bool = True
+) -> str:
+    """排名工具列：搜尋框（名稱/代號）+ 可選通路篩選。"""
+    parts = [
+        '<input type="search" class="rank-search" placeholder="🔍 搜尋名稱或代號" '
+        'aria-label="搜尋名稱或代號" oninput="setSearch(this.value)">'
     ]
-    for c in CHANNELS:
-        if c in counts:
-            chips.append(
-                f'<button type="button" class="ch-chip" data-c="{_esc(c)}" '
-                f'onclick="setChannel(\'{_esc(c)}\')">{_esc(c)} <b>{counts[c]}</b></button>'
-            )
-    return (
-        '<div class="ch-filters" role="group" aria-label="銷售通路篩選">'
-        '<span class="ch-label">通路：</span>' + "".join(chips) + "</div>" + CHANNEL_JS
-    )
+    if show_channel:
+        rows = funds[:limit] if limit else funds
+        counts: dict[str, int] = {}
+        for f in rows:
+            for c in f.get("channels", []):
+                counts[c] = counts.get(c, 0) + 1
+        chips = [
+            f'<button type="button" class="ch-chip active" data-c="all" '
+            f'onclick="setChannel(\'all\')">全部 <b>{len(rows)}</b></button>'
+        ]
+        for c in CHANNELS:
+            if c in counts:
+                chips.append(
+                    f'<button type="button" class="ch-chip" data-c="{_esc(c)}" '
+                    f'onclick="setChannel(\'{_esc(c)}\')">{_esc(c)} <b>{counts[c]}</b></button>'
+                )
+        parts.append(
+            '<span class="ch-filters" role="group" aria-label="銷售通路篩選">'
+            '<span class="ch-label">通路：</span>' + "".join(chips) + "</span>"
+        )
+    return '<div class="rank-toolbar">' + "".join(parts) + "</div>" + CHANNEL_JS
 
 
 def _channel_stats(analysis: dict, limit: int) -> dict[str, int]:
@@ -647,8 +679,12 @@ def render_report(
         limit = 0
         rank_label = f"完整排名表（{total} 檔）"
 
-    channel_filter_html = (
-        _channel_filter_html(funds, limit) if (show_channel_filter and not compact) else ""
+    toolbar_html = (
+        _rank_toolbar_html(
+            funds, limit, show_channel=(show_channel_filter and not compact)
+        )
+        if limit
+        else ""
     )
     channel_dist_html = (
         _channel_dist_html(_channel_stats(analysis, limit), limit)
@@ -685,7 +721,7 @@ def render_report(
 
 <h2>基金排名</h2>
 <p style="font-size:13px;color:var(--mut)">依 AI 初評分（動能 + 新聞聲量）排序；前段基金另有 LLM 深度分析。</p>
-{channel_filter_html}
+{toolbar_html}
 <details>
 <summary><span class="g">▶</span> 展開／收合{rank_label}</summary>
 <div style="max-height:480px;overflow:auto;border-radius:8px">
@@ -798,10 +834,10 @@ def _render_ranking_page(
     date: str,
     nav_html: str,
 ) -> str:
-    """完整排名頁（最新 2,128 列 + 通路 filter）。"""
+    """完整排名頁（最新全列 + 搜尋/通路 filter）。"""
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
     funds = analysis.get("funds", [])
-    filter_html = _channel_filter_html(funds, 0)
+    filter_html = _rank_toolbar_html(funds, 0, show_channel=True)
     rank_rows = _ranking_rows(analysis, nav_by_code, limit=0)
     return f"""<!DOCTYPE html>
 <html lang="zh-Hant">
