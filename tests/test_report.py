@@ -330,6 +330,18 @@ def test_ranking_table_removed_low_value_columns():
     assert "<h4>購入模式</h4>" in html
 
 
+def test_ranking_table_only_preliminary_score_and_channel():
+    """排名表僅餘：#, 名稱, 初評分, 通路（深度分數/評級移至個案卡片）。"""
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
+    assert "<th>深度分數</th>" not in html
+    assert "<th>評級</th>" not in html
+    assert '<th class="num">初評分</th>' in html
+    assert "<th>通路</th>" in html
+    # 個案卡片 summary 仍顯示深度分數與評級
+    assert "深度分數 85 · 初評分 93.9" in html
+    assert 'class="rating r-值得關注"' in html
+
+
 def test_detail_card_has_data_ch():
     html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
     assert 'id="fund-0352" data-ch="元大證券,匯豐銀行,渣打銀行"' in html
