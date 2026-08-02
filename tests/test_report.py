@@ -320,6 +320,16 @@ def test_ranking_rows_name_column_proportional_width():
     assert "flex-wrap:nowrap" in html
 
 
+def test_ranking_table_removed_low_value_columns():
+    """排名表不再顯示情緒/購入模式（個案卡片保留）。"""
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
+    assert "<th>情緒</th>" not in html
+    assert "<th>購入模式</th>" not in html
+    # 個案卡片仍保留市場情緒與購入模式區塊
+    assert "<h4>市場情緒</h4>" in html
+    assert "<h4>購入模式</h4>" in html
+
+
 def test_detail_card_has_data_ch():
     html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
     assert 'id="fund-0352" data-ch="元大證券,匯豐銀行,渣打銀行"' in html

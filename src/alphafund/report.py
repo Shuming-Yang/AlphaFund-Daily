@@ -505,8 +505,6 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
         rating = da.get("overall_rating") or ""
         deep = da.get("value_score")
         deep_txt = f"{deep:.0f}" if deep is not None else "—"
-        sentiment = da.get("market_sentiment") or "—"
-        sent_cls = {"Positive": "sent-p", "Negative": "sent-n"}.get(sentiment, "sent-u")
         ch = ",".join(fa.get("channels", []))
         search = _esc(f"{fa['name']} {fa['fund_code']}".lower())
         rows.append(
@@ -517,8 +515,6 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
             f"<td class=\"num\">{fa['preliminary_score']}</td>"
             f"<td class=\"num\">{deep_txt}</td>"
             f"<td>{f'<span class=\"rating r-{_esc(rating)}\">{_esc(rating)}</span>' if rating else '—'}</td>"
-            f"<td><span class=\"{sent_cls}\">{_esc(sentiment)}</span></td>"
-            f"<td>{_esc(da.get('recommended_strategy') or '—')}</td>"
             f"<td>{_channel_badges(fa.get('channels') or [])}</td></tr>"
         )
     return "".join(rows)
@@ -728,7 +724,7 @@ def render_report(
 <summary><span class="g">▶</span> 展開／收合{rank_label}</summary>
 <div style="max-height:480px;overflow:auto;border-radius:8px">
 <table>
-<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th><th>通路</th></tr></thead>
+<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>通路</th></tr></thead>
 <tbody>{rank_rows}</tbody>
 </table></div>
 </details>
@@ -860,7 +856,7 @@ def _render_ranking_page(
 {filter_html}
 <div style="max-height:70vh;overflow:auto;border-radius:8px">
 <table>
-<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>情緒</th><th>購入模式</th><th>通路</th></tr></thead>
+<thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th class="num">深度分數</th><th>評級</th><th>通路</th></tr></thead>
 <tbody>{rank_rows}</tbody>
 </table></div>
 <footer>
