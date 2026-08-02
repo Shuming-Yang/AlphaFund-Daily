@@ -139,9 +139,9 @@ td.cmp-miss{color:#b0b6bd;text-align:center}
 .ch-chip.active b{opacity:.9;color:#fff}
 .ch-dist{font-size:13px;color:var(--ink);margin:12px 0 0}
 .ch-dist b{font-variant-numeric:tabular-nums}
-.ch-badges{display:inline-flex;justify-content:flex-end;gap:4px;flex-wrap:wrap}
-.ch-badge{font-size:11px;padding:1px 7px;border-radius:20px;border:1px solid var(--line);
-background:#eef1f4;color:var(--ink);white-space:nowrap}
+.ch-badges{display:inline-flex;justify-content:flex-end;gap:3px;flex-wrap:wrap;align-items:center}
+.ch-icon{display:inline-flex;line-height:0;vertical-align:middle}
+.ch-icon svg{display:block}
 .jump-up{background:#d3f0dd;color:var(--pos);font-weight:700;border-radius:6px;padding:1px 6px;white-space:nowrap}
 .jump-down{background:#f7d6d6;color:var(--neg);font-weight:700;border-radius:6px;padding:1px 6px;white-space:nowrap}
 @media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
@@ -574,15 +574,33 @@ def _channel_dist_html(stats: dict[str, int], limit: int) -> str:
     )
 
 
+# 通路 icon：單字 + 品牌色
+_CHANNEL_ICON: dict[str, tuple[str, str]] = {
+    "元大證券": ("元", "#C8102E"),
+    "匯豐銀行": ("匯", "#0072CE"),
+    "渣打銀行": ("渣", "#00536D"),
+}
+
+
 def _channel_badges(channels: list[str]) -> str:
-    """靠右通路小徽章（兩字全名）。"""
+    """靠右通路 icon（內嵌 SVG monogram + 懸停全名）。"""
     if not channels:
         return ""
-    pills = "".join(
-        f'<span class="ch-badge">{_esc(name)}</span>' for name in CHANNELS
-        if name in (channels or [])
+    icons = "".join(
+        _channel_icon(name) for name in CHANNELS if name in (channels or [])
     )
-    return f'<span class="ch-badges">{pills}</span>'
+    return f'<span class="ch-badges">{icons}</span>'
+
+
+def _channel_icon(name: str) -> str:
+    char, color = _CHANNEL_ICON.get(name, ("?", "#6b7280"))
+    return (
+        f'<span class="ch-icon" title="{_esc(name)}" aria-label="{_esc(name)}">'
+        f'<svg width="18" height="18" viewBox="0 0 18 18" role="img">'
+        f'<rect width="18" height="18" rx="4" fill="{color}"/>'
+        f'<text x="9" y="12.5" text-anchor="middle" font-size="11" '
+        f'fill="#fff" font-weight="600">{char}</text></svg></span>'
+    )
 
 
 def render_report(

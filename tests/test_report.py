@@ -124,10 +124,23 @@ def test_render_report_shows_three_channel_counts():
 def test_channel_badges_show_supported_channels():
     from alphafund.report import _channel_badges
     badges = _channel_badges(["元大證券", "渣打銀行"])
-    assert 'class="ch-badge">元大證券<' in badges
-    assert 'class="ch-badge">渣打銀行<' in badges
-    assert "匯豐銀行" not in badges
+    # icon：SVG monogram + title 全名
+    assert 'class="ch-icon"' in badges
+    assert 'title="元大證券"' in badges
+    assert 'title="渣打銀行"' in badges
+    assert '<rect' in badges and "<text" in badges
+    assert 'title="匯豐銀行"' not in badges
     assert _channel_badges([]) == ""
+
+
+def test_channel_icon_colors():
+    from alphafund.report import _channel_icon
+    assert "#C8102E" in _channel_icon("元大證券")
+    assert "#0072CE" in _channel_icon("匯豐銀行")
+    assert "#00536D" in _channel_icon("渣打銀行")
+    assert ">元<" in _channel_icon("元大證券")
+    assert ">匯<" in _channel_icon("匯豐銀行")
+    assert ">渣<" in _channel_icon("渣打銀行")
 
 
 def test_ranking_rows_include_channel_badges():
@@ -135,7 +148,8 @@ def test_ranking_rows_include_channel_badges():
         _sample_data(), _sample_nav(), "2026-08-01", rank_limit=2
     )
     assert "<th>通路</th>" in html
-    assert 'class="ch-badge">元大證券' in html
+    assert 'class="ch-icon"' in html
+    assert 'title="元大證券"' in html
 
 
 def test_render_calendar_marks_available_dates():
