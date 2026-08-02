@@ -59,10 +59,15 @@ DEFAULT_HEADERS: dict[str, str] = {
 REFERER_ORG_SEARCH = f"{TDCC_BASE_URL}/offshore/org-info/org-search"
 REFERER_SALES_FUND = f"{TDCC_BASE_URL}/offshore/org-info/sales-fund"
 REFERER_FUND_SEARCH = f"{TDCC_BASE_URL}/offshore/fund-info/fund-search"
+REFERER_DIVIDEND = f"{TDCC_BASE_URL}/offshore/fund-info/info-dividend"
 
 TDCC_ORG_BASIC = "/api/offshore/org-info/org-search/query-org-basic"
 TDCC_ORG_DETAIL = "/api/offshore/org-info/org-search/query-org-detail"
 TDCC_FUND_QUERY = "/api/offshore/fund-info/fund-search/query"
+TDCC_DIVIDEND_QUERY = "/api/offshore/fund-info/info-dividend/query"
+
+# 配息查詢：以基金代碼當 searchName（關鍵字模式）精準查詢
+TDCC_DIVIDEND_QUERY_TYPE = "0"  # 0=關鍵字查詢（境外）；1=境外機構查詢
 
 FUND_PAGE_SIZE = 200
 
@@ -124,5 +129,10 @@ RANKING_LIMIT = int(os.environ.get("RANKING_LIMIT", "500"))
 
 # 投資模式（預設：長期投資 + 被動收入）
 INVESTMENT_MODE = os.environ.get("INVESTMENT_MODE", "income_long_term")
-INCOME_BONUS = float(os.environ.get("INCOME_BONUS", "10"))   # 配息型收入加分
+INCOME_BONUS = float(os.environ.get("INCOME_BONUS", "10"))   # 配息收入加分上限
+INCOME_YIELD_PER_POINT = float(os.environ.get("INCOME_YIELD_PER_POINT", "1.5"))  # 每 1% 配息率折算分數（6.7% → 滿分）
+INCOME_BONUS_UNKNOWN = float(os.environ.get("INCOME_BONUS_UNKNOWN", "3"))  # 配息型但無配息資料之保守底分
 STABILITY_MAX = float(os.environ.get("STABILITY_MAX", "5"))  # 穩定加分上限
+
+# 配息率計算：近 N 個月配息總額 / 最新淨值
+DIVIDEND_MONTHS = int(os.environ.get("DIVIDEND_MONTHS", "12"))

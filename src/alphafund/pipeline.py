@@ -4,17 +4,17 @@ from __future__ import annotations
 import gzip
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from .config import CHANNELS, HISTORY_DIR, TIMEZONE, TOP_N_DEEP_ANALYSIS, UNIVERSE_FILE
+from .config import CHANNELS, DIVIDEND_MONTHS, HISTORY_DIR, TIMEZONE, TOP_N_DEEP_ANALYSIS, UNIVERSE_FILE
 from .analyzer import SYSTEM_PROMPT, build_user_prompt, parse_deep_analysis
 from .filters import filter_funds
 from .llm import LLMClient, QuotaExceeded, get_llm_client
-from .models import DailyAnalysis, DailySnapshot, Fund, FundAnalysis, NewsItem
+from .models import DailyAnalysis, DailySnapshot, DividendRecord, Fund, FundAnalysis, NewsItem
 from .news import fund_matches_series, fund_matches_title, fetch_universe_news
-from .scoring import preliminary_score, strategy_from_signals
+from .scoring import income_class_from_name, preliminary_score, strategy_from_signals
 from .tdcc import TdccClient
 
 logger = logging.getLogger(__name__)
@@ -42,6 +42,49 @@ def build_universe(client: TdccClient) -> list[Fund]:
     funds = filter_funds(raw, channel_sets)
     logger.info("目標基金清單（通路 ∩ USD）: %d", len(funds))
     return funds
+
+
+def _dividend_window(months: int = DIVIDEND_MONTHS, ref: datetime | None = None) -> tuple[str, str]:
+    """回傳配息基準日查詢區間（YYYY/MM, YYYY/MM）：近 months 個月至當月。"""
+    now = ref or datetime.now(ZoneInfo(TIMEZONE))
+    begin = (now.replace(day=1) - timedelta(days=1)).replace(day=1)
+    for _ in range(max(1, months - 1)):
+        begin = (begin - timedelta(days=1)).replace(day=1)
+    return begin.strftime("%Y/%m"), now.strftime("%Y/%m")
+
+
+def _dividend_candidate(fund: Fund) -> bool:
+    """是否需要抓取配息：配息型，或名稱含「收益」之「其他」基金。"""
+    cls = income_class_from_name(fund.name)
+    if cls == "配息型":
+        return True
+    if cls == "其他" and "收益" in fund.name:
+        return True
+    return False
+
+
+def fetch_dividends(client: TdccClient, funds: list[Fund], months: int = DIVIDEND_MONTHS) -> int:
+    """為配息候選基金抓取近 N 月配息紀錄並寫入 Fund.dividends。
+
+    回傳有配息紀錄之基金數；累積型基金與查無資料者略過。
+    """
+    begin, end = _dividend_window(months)
+    targets = [f for f in funds if _dividend_candidate(f)]
+    logger.info("配息候選基金: %d（區間 %s ~ %s）", len(targets), begin, end)
+    with_data = 0
+    for idx, fund in enumerate(targets, start=1):
+        try:
+            rows = client.query_dividend(fund.fund_code, begin, end)
+        except Exception as exc:  # noqa: BLE001 — 單檔失敗不中斷管道
+            logger.warning("配息查詢失敗 %s (%s): %s", fund.name[:24], fund.fund_code, exc)
+            continue
+        if rows:
+            fund.dividends = [DividendRecord.from_tdcc(r) for r in rows]
+            with_data += 1
+        if idx % 100 == 0:
+            logger.info("配息進度: %d/%d（%d 檔有配息）", idx, len(targets), with_data)
+    logger.info("配息抓取完成: %d/%d 檔有配息紀錄", with_data, len(targets))
+    return with_data
 
 
 def _write_json_gz(path: Path, data) -> None:
@@ -84,17 +127,21 @@ def run_m1(
     date: str | None = None,
     news_limit: int | None = None,
     save: bool = True,
+    dividend: bool = True,
 ) -> DailySnapshot:
     """執行完整 M1 管線並回傳快照。
 
     news_limit 指定時，新聞目標為「動能排序前 N 檔」而非清單前 N 檔，
     確保兩階段（ADR-0003）前段基金有新（涵蓋深度分析對象）。
+    dividend 指定時，為配息候選基金抓取近 N 月配息紀錄（供配息率評分）。
     """
     date = date or today_str()
     funds: list[Fund] = []
     news: list[NewsItem] = []
     with TdccClient() as client:
         funds = build_universe(client)
+        if dividend:
+            fetch_dividends(client, funds)
     if news_limit is None or news_limit > 0:
         targets = funds
         if news_limit is not None:

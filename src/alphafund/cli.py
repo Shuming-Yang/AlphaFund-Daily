@@ -20,6 +20,7 @@ def _build_parser() -> argparse.ArgumentParser:
     m1.add_argument("--date", help="快照日期 YYYY-MM-DD（預設今天）")
     m1.add_argument("--news-limit", type=int, default=None,
                     help="新聞抓取基金上限（0=不抓新聞；預設全體）")
+    m1.add_argument("--no-dividend", action="store_true", help="不抓取配息紀錄")
     m1.add_argument("--no-save", action="store_true", help="不寫入 data/")
 
     m2 = sub.add_parser("m2", help="執行 M2（初評分排名 + 前段 LLM 深度分析）")
@@ -61,7 +62,8 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.cmd == "m1":
-            snap = run_m1(date=args.date, news_limit=args.news_limit, save=not args.no_save)
+            snap = run_m1(date=args.date, news_limit=args.news_limit,
+                          save=not args.no_save, dividend=not args.no_dividend)
             print(f"快照 {snap.date}: 基金 {snap.universe_count} 檔, 新聞 {len(snap.news)} 筆")
         elif args.cmd == "m2":
             analysis = run_m2(

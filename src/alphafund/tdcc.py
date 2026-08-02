@@ -11,15 +11,18 @@ import logging
 from typing import Any
 
 import httpx
-from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_fixed
+from tenacity import retry, retry_if_exception, retry_if_exception_type, stop_after_attempt, wait_fixed
 
 from .config import (
     DEFAULT_HEADERS,
     FUND_PAGE_SIZE,
     TDCC_BASE_URL,
+    TDCC_DIVIDEND_QUERY,
+    TDCC_DIVIDEND_QUERY_TYPE,
     TDCC_FUND_QUERY,
     TDCC_ORG_BASIC,
     TDCC_ORG_DETAIL,
+    REFERER_DIVIDEND,
     REFERER_FUND_SEARCH,
     REFERER_ORG_SEARCH,
     REFERER_SALES_FUND,
@@ -28,6 +31,13 @@ from .config import (
 logger = logging.getLogger(__name__)
 
 _RETRYABLE = (httpx.TransportError, httpx.TimeoutException)
+
+
+def _is_retryable_exc(exc: BaseException) -> bool:
+    """可重試例外：404（查無配息資料）屬正常結果，不重試。"""
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code != 404
+    return isinstance(exc, _RETRYABLE)
 
 
 class TdccClient:
@@ -122,6 +132,57 @@ class TdccClient:
                 logger.warning("超過 200 頁上限，停止分頁")
                 break
         return records
+
+    @retry(
+        retry=retry_if_exception(_is_retryable_exc),
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(2),
+        reraise=True,
+    )
+    def _query_dividend_page(
+        self, fund_code: str, begin: str, end: str, page: int, page_size: int
+    ) -> dict[str, Any]:
+        """查單一基金某頁配息紀錄。begin/end 格式 YYYY/MM（配息基準日區間）。"""
+        payload = {
+            "_pageNum": page,
+            "_pageSize": page_size,
+            "queryType": TDCC_DIVIDEND_QUERY_TYPE,
+            "searchName": fund_code,
+            "organizeCode": "",
+            "fundCode": "",
+            "fundClassCode": "",
+            "asiFreqList": [],
+            "baseBeginDate": begin,
+            "baseEndDate": end,
+        }
+        return self._post(TDCC_DIVIDEND_QUERY, payload, REFERER_DIVIDEND)
+
+    def query_dividend(self, fund_code: str, begin: str, end: str) -> list[dict[str, Any]]:
+        """依基金代碼查詢配息紀錄（分頁）。
+
+        begin/end 為配息基準日區間（YYYY/MM）；無資料（404）回傳空串列。
+        注意：TDCC searchName 為子字串比對，可能命中其他代碼含相同子串之基金
+        （如 0385 亦命中 LU2861038557），故回傳僅保留 fundCode 完全相符之紀錄。
+        """
+        records: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            try:
+                data = self._query_dividend_page(fund_code, begin, end, page, FUND_PAGE_SIZE)
+            except httpx.HTTPStatusError as exc:
+                if exc.response.status_code == 404:
+                    return []
+                raise
+            items = data.get("list") or []
+            records.extend(items)
+            total = int(data.get("total") or 0)
+            if not data.get("hasNextPage") or len(records) >= total:
+                break
+            page += 1
+            if page > 50:
+                logger.warning("配息分頁超過 50 頁上限，停止分頁（%s）", fund_code)
+                break
+        return [r for r in records if str(r.get("fundCode")) == fund_code]
 
     def close(self) -> None:
         self._client.close()

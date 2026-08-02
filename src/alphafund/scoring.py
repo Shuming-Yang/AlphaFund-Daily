@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from .config import INCOME_BONUS, STABILITY_MAX, TIMEZONE
+from .config import INCOME_BONUS, INCOME_BONUS_UNKNOWN, INCOME_YIELD_PER_POINT, STABILITY_MAX, TIMEZONE
 from .models import Fund, NewsItem
 from .news import fund_matches_title
 
@@ -143,6 +143,23 @@ def _clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
     return max(lo, min(hi, v))
 
 
+def income_bonus_from_yield(fund: Fund, income_cls: str) -> tuple[float, float | None]:
+    """收入加分（0–10）：依實際近 12M 配息率分級。
+
+    - 有配息率（>0）→ min(上限, 配息率 × INCOME_YIELD_PER_POINT)。
+    - 配息型但無配息資料 → 保守底分 INCOME_BONUS_UNKNOWN。
+    - 其餘 → 0。
+    回傳 (加分, 配息率%)。
+    """
+    yield_pct = fund.annualized_yield()
+    if yield_pct is not None and yield_pct > 0:
+        bonus = min(INCOME_BONUS, yield_pct * INCOME_YIELD_PER_POINT)
+        return round(bonus, 1), yield_pct
+    if income_cls == "配息型":
+        return INCOME_BONUS_UNKNOWN, yield_pct
+    return 0.0, yield_pct
+
+
 def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str, float]]:
     """計算初評分與細項。"""
     mom, parts = momentum(fund)
@@ -156,7 +173,7 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
     score_n = min(NEWS_SCORE_CAP, n * NEWS_SCORE_PER_ITEM)
 
     income_cls = income_class_from_name(fund.name)
-    income_bonus = INCOME_BONUS if income_cls == "配息型" else 0.0
+    income_bonus, yield_pct = income_bonus_from_yield(fund, income_cls)
     stab_bonus = round(stability_score(fund) * STABILITY_MAX, 1)
 
     total = round(_clamp(score_m + score_n + income_bonus + stab_bonus, 0.0, 100.0), 1)
@@ -166,6 +183,7 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
         "income_bonus": round(income_bonus, 1),
         "stability_bonus": round(stab_bonus, 1),
         "income_class": income_cls,
+        "yield_pct": round(yield_pct, 2) if yield_pct is not None else 0.0,
         "momentum_pct": round(mom, 4) if mom is not None else 0.0,
         "news_count": float(n),
     }

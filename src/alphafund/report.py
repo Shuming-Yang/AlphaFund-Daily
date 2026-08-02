@@ -153,6 +153,8 @@ table.rank .ch-badges{justify-content:flex-start}
 .rank-name a{overflow-wrap:break-word;word-break:break-word}
 .code{display:block;font-size:11px;color:var(--mut);font-weight:400}
 .code-sum{font-size:11px;color:var(--mut);margin-left:6px}
+.yield-tag{display:inline-block;margin-left:8px;padding:0 6px;border-radius:4px;font-size:11px;
+color:var(--acc,#2f7a57);background:rgba(47,122,87,.12);white-space:nowrap}
 .rank-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
 .rank-search{padding:6px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;
 background:var(--card);color:var(--ink);min-width:220px;flex:1 1 240px}
@@ -502,7 +504,10 @@ def _detail_card(
     )
     income_cls = income_class_from_name(fa.get("name", ""))
     income_suit = da.get("income_suitability") or ""
+    yield_pct = pb.get("yield_pct") or 0.0
     income_tag = f"<br>收益取向：{income_cls}"
+    if yield_pct and yield_pct > 0:
+        income_tag += f" ｜ 近12M配息率 {yield_pct:.2f}%"
     if income_suit:
         income_tag += f" ｜ 被動收入適合度：{income_suit}"
 
@@ -553,11 +558,15 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
             break
         ch = ",".join(fa.get("channels", []))
         search = _esc(f"{fa['name']} {fa['fund_code']}".lower())
+        yield_pct = (fa.get("preliminary_breakdown") or {}).get("yield_pct") or 0.0
+        yield_tag = (
+            f'<span class="yield-tag">配息率 {yield_pct:.2f}%</span>' if yield_pct and yield_pct > 0 else ""
+        )
         rows.append(
             f"<tr data-ch=\"{_esc(ch)}\" data-search=\"{search}\">"
             f"<td class=\"num\">{fa['rank']}</td>"
             f"<td class=\"rank-name\"><a href=\"#fund-{_esc(fa['fund_code'])}\">{_esc(fa['name'])}</a>"
-            f"<span class=\"code\">{_esc(fa['fund_code'])}</span></td>"
+            f"<span class=\"code\">{_esc(fa['fund_code'])}</span>{yield_tag}</td>"
             f"<td class=\"num\">{fa['preliminary_score']}</td>"
             f"<td>{_channel_badges(fa.get('channels') or [])}</td></tr>"
         )
@@ -790,7 +799,7 @@ def render_report(
 </div>
 
 <footer>
-<p><b>免責聲明：</b>本報告由自動化程式與 AI 模型（Gemini API）生成，僅供學術研究與個人資產管理參考，不構成任何投資招攬、要約或決策依據。投資人應獨立判斷並審慎評估風險；過去績效不代表未來績效保證。</p>
+<p><b>免責聲明：</b>本報告由自動化程式與 AI 模型（LLM 供應商鏈）生成，僅供學術研究與個人資產管理參考，不構成任何投資招攬、要約或決策依據。投資人應獨立判斷並審慎評估風險；過去績效不代表未來績效保證。</p>
 <p>資料來源：TDCC 基金資訊觀測站（上架清單／淨值／績效）、Google News（新聞）。資料可能延遲或不完整。</p>
 </footer>
 </div>
@@ -911,7 +920,7 @@ def _render_ranking_page(
 <tbody>{rank_rows}</tbody>
 </table></div>
 <footer>
-<p><b>免責聲明：</b>本表由自動化程式與 AI 模型（Gemini API）生成，僅供學術研究與個人資產管理參考，不構成任何投資招攬、要約或決策依據。</p>
+<p><b>免責聲明：</b>本表由自動化程式與 AI 模型（LLM 供應商鏈）生成，僅供學術研究與個人資產管理參考，不構成任何投資招攬、要約或決策依據。</p>
 </footer>
 </div>
 </body>

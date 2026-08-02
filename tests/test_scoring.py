@@ -1,7 +1,7 @@
 """規則初評分測試。"""
 from __future__ import annotations
 
-from alphafund.models import Fund, NewsItem
+from alphafund.models import DividendRecord, Fund, NewsItem
 from alphafund.scoring import (income_class_from_name, momentum, news_volume,
     parse_return, preliminary_score, stability_score, strategy_from_signals)
 
@@ -119,7 +119,71 @@ def test_stability_score():
 def test_preliminary_score_income_bonus():
     f = Fund(fund_code="A", name="聯博全球非投資等級債券基金-TA類型(穩定月配)(美元)", returns={k: "0" for k in ("navValue5", "navValue6", "navValue7", "navValue8")})
     score, breakdown = preliminary_score(f, [])
-    # 配息型 +10（收入加分）；動能0→30、穩定0（全0非正）
-    assert breakdown["income_bonus"] == 10.0
+    # 配息型但無配息資料 → 保守底分 3（收入加分）；動能0→30、穩定0（全0非正）
+    assert breakdown["income_bonus"] == 3.0
     assert breakdown["income_class"] == "配息型"
-    assert score == 40.0
+    assert breakdown["yield_pct"] == 0.0
+    assert score == 33.0
+
+
+def test_income_bonus_scales_with_yield():
+    # 近12M 每單位配息 0.36、淨值 6.98 → 配息率 ≈ 5.16% → 5.16*1.5 ≈ 7.7 分
+    f = Fund(
+        fund_code="0385",
+        name="富蘭克林坦伯頓全球投資系列-亞洲債券基金美元A(Mdis)股",
+        nav="6.980000",
+        dividends=[
+            DividendRecord(fund_code="0385", base_date="2026/01/30", amount=0.031),
+            DividendRecord(fund_code="0385", base_date="2026/02/27", amount=0.029),
+            DividendRecord(fund_code="0385", base_date="2026/03/31", amount=0.032),
+            DividendRecord(fund_code="0385", base_date="2026/04/30", amount=0.030),
+            DividendRecord(fund_code="0385", base_date="2026/05/29", amount=0.031),
+            DividendRecord(fund_code="0385", base_date="2026/06/30", amount=0.030),
+            DividendRecord(fund_code="0385", base_date="2026/07/31", amount=0.031),
+            DividendRecord(fund_code="0385", base_date="2025/08/29", amount=0.031),
+            DividendRecord(fund_code="0385", base_date="2025/09/30", amount=0.029),
+            DividendRecord(fund_code="0385", base_date="2025/10/31", amount=0.032),
+            DividendRecord(fund_code="0385", base_date="2025/11/28", amount=0.030),
+            DividendRecord(fund_code="0385", base_date="2025/12/31", amount=0.031),
+        ],
+    )
+    yield_val = f.annualized_yield()
+    assert yield_val is not None
+    assert abs(yield_val - 5.26) < 0.02
+    _, breakdown = preliminary_score(f, [])
+    assert breakdown["income_class"] == "配息型"
+    assert breakdown["income_bonus"] == 7.9  # 5.26 × 1.5 ≈ 7.89 → 7.9
+
+
+def test_income_bonus_yield_capped():
+    f = Fund(
+        fund_code="B",
+        name="某高配息基金美元(月配)",
+        nav="10.000000",
+        dividends=[
+            DividendRecord(fund_code="B", base_date="2026/01/30", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2026/02/27", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2026/03/31", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2026/04/30", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2026/05/29", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2026/06/30", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2026/07/31", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2025/08/29", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2025/09/30", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2025/10/31", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2025/11/28", amount=1.0),
+            DividendRecord(fund_code="B", base_date="2025/12/31", amount=1.0),
+        ],
+    )
+    # 12M 配 12 → 配息率 120% → 加分封頂 10
+    _, breakdown = preliminary_score(f, [])
+    assert breakdown["income_bonus"] == 10.0
+
+
+def test_non_dividend_fund_no_income_bonus():
+    f = Fund(fund_code="C", name="某累積型基金-美元A(acc)股", nav="10.000000",
+             returns={k: "5" for k in ("navValue5", "navValue6", "navValue7", "navValue8")})
+    score, breakdown = preliminary_score(f, [])
+    assert breakdown["income_class"] == "累積型"
+    assert breakdown["income_bonus"] == 0.0
+    assert breakdown["yield_pct"] == 0.0
