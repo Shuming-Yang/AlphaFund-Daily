@@ -17,6 +17,10 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from .config import (
+    DCA_BONUS_MAX,
+    DCA_INVEST_MONTHLY,
+    DCA_MONTHS,
+    DCA_RETURN_PER_POINT,
     GROWTH_DECAY,
     GROWTH_MAX,
     GROWTH_WEIGHTS,
@@ -34,9 +38,9 @@ from .config import (
 from .models import Fund, NewsItem
 from .news import fund_matches_title
 
-# 新聞聲量權重（低）：佔比上限 10（穩定 35 + 成長 35 + 收入 10 為主）
-NEWS_SCORE_CAP = 10.0      # 新聞聲量分上限（0–10）
-NEWS_SCORE_PER_ITEM = 2.0  # 每則基金特定新聞加分
+# 新聞聲量權重（低）：上限 5（穩定 35 + 成長 35 + 收入 15 + DCA 10 為主）
+NEWS_SCORE_CAP = 5.0       # 新聞聲量分上限（0–5）
+NEWS_SCORE_PER_ITEM = 1.0  # 每則基金特定新聞加分
 
 # 揭露括號（非級別類型）：含 本基金/Rule 144A/投資等級 之風險揭露，分類前移除
 _DISCLOSURE_RE = re.compile(
@@ -244,6 +248,87 @@ def _clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
     return max(lo, min(hi, v))
 
 
+def _nav_path_estimated(fund: Fund) -> list[float] | None:
+    """以期間報酬錨點（1M/3M/6M/1Y）在 log 空間內插出過去 N 個月淨值路徑（推估）。
+
+    回傳 nav[0..N]，nav[0] = 最新淨值；錨點不足時回傳 None。
+    """
+    nav_now = fund._nav_float()
+    if nav_now is None or nav_now <= 0:
+        return None
+    anchors_raw = {
+        "1M": parse_return(fund.returns.get("navValue5")),
+        "3M": parse_return(fund.returns.get("navValue6")),
+        "6M": parse_return(fund.returns.get("navValue7")),
+        "1Y": parse_return(fund.returns.get("navValue8")),
+    }
+    if any(v is None for v in anchors_raw.values()):
+        return None
+    anchors: dict[str, float] = {k: v for k, v in anchors_raw.items() if v is not None}  # type: ignore[misc]
+    pts = {
+        0: nav_now,
+        1: nav_now / (1 + anchors["1M"] / 100),
+        3: nav_now / (1 + anchors["3M"] / 100),
+        6: nav_now / (1 + anchors["6M"] / 100),
+        DCA_MONTHS: nav_now / (1 + anchors["1Y"] / 100),
+    }
+    months = sorted(pts)
+    out: list[float] = []
+    for m in range(DCA_MONTHS + 1):
+        for i in range(len(months) - 1):
+            lo, hi = months[i], months[i + 1]
+            if lo <= m <= hi:
+                frac = (m - lo) / (hi - lo) if hi > lo else 0.0
+                out.append(math.exp(math.log(pts[lo]) * (1 - frac) + math.log(pts[hi]) * frac))
+                break
+        else:
+            out.append(nav_now)
+    return out
+
+
+def dca_return(fund: Fund) -> tuple[float | None, float]:
+    """定期定額年報酬%（推估）：每月投 DCA_INVEST_MONTHLY、為期 DCA_MONTHS 個月。
+
+    以推估淨值路徑買入；配息依 base_date 對應月份、以當時持有單位 × amount 累加現金（不再投資）。
+    回傳 (年報酬%, 累計配息現金)。
+    """
+    nav = _nav_path_estimated(fund)
+    if nav is None:
+        return None, 0.0
+    units = sum(DCA_INVEST_MONTHLY / nav[m] for m in range(DCA_MONTHS))
+    cash = 0.0
+    if fund.dividends:
+        now = datetime.now(ZoneInfo(TIMEZONE))
+        for d in fund.dividends:
+            if not d.base_date or d.amount <= 0:
+                continue
+            try:
+                bd = datetime.strptime(d.base_date, "%Y/%m/%d").replace(tzinfo=ZoneInfo(TIMEZONE))
+            except ValueError:
+                continue
+            days_ago = (now - bd).days
+            if days_ago < 0 or days_ago > DCA_MONTHS * 31:
+                continue
+            m = min(DCA_MONTHS - 1, max(0, round(days_ago / 30.44)))
+            held = sum(DCA_INVEST_MONTHLY / nav[k] for k in range(m, DCA_MONTHS))
+            cash += held * d.amount
+    invested = DCA_INVEST_MONTHLY * DCA_MONTHS
+    return (units * nav[0] + cash - invested) / invested * 100.0, cash
+
+
+def dca_bonus_from_return(ret: float | None, stability: float) -> float:
+    """DCA 加分（0–DCA_BONUS_MAX）：依定期定額年報酬並乘穩定性門控。
+
+    raw = clamp(年報酬% × DCA_RETURN_PER_POINT, 0, DCA_BONUS_MAX)
+    bonus = raw × (穩定持續分 / STABILITY_MAX_NEW)   # V 型高波動基金打折
+    """
+    if ret is None or ret <= 0:
+        return 0.0
+    raw = _clamp(ret * DCA_RETURN_PER_POINT, 0.0, DCA_BONUS_MAX)
+    gate = min(1.0, stability / STABILITY_MAX_NEW) if STABILITY_MAX_NEW > 0 else 0.0
+    return round(raw * gate, 1)
+
+
 def income_bonus_from_yield(fund: Fund, income_cls: str) -> tuple[float, float | None]:
     """收入加分（0–INCOME_BONUS）：依有效配息率分級 + 四級保底。
 
@@ -289,11 +374,14 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
     income_cls = income_class_from_name(fund.name)
     income_bonus, yield_pct = income_bonus_from_yield(fund, income_cls)
 
+    dca_ret, _dca_cash = dca_return(fund)
+    dca = dca_bonus_from_return(dca_ret, s)
+
     risk_bonus = RISK_BONUS_RR.get(fund.risk_level or "", 0.0)
     lev_penalty = -LEVERAGE_PENALTY if is_leveraged_name(fund.name) else 0.0
 
     raw_yield = fund.annualized_yield() if fund.dividends else None
-    total = round(_clamp(g + s + score_n + income_bonus + risk_bonus + lev_penalty, 0.0, 100.0), 1)
+    total = round(_clamp(g + s + score_n + income_bonus + dca + risk_bonus + lev_penalty, 0.0, 100.0), 1)
     breakdown = {
         "growth_score": round(g, 2),
         "stability_score": round(s, 1),
@@ -302,6 +390,8 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
         "recent": round(stab_detail["recent"], 1),
         "news_score": round(score_n, 2),
         "income_bonus": round(income_bonus, 1),
+        "dca_bonus": round(dca, 1),
+        "dca_return_pct": round(dca_ret, 2) if dca_ret is not None else 0.0,
         "risk_bonus": round(risk_bonus, 1),
         "leverage_penalty": round(lev_penalty, 1),
         "risk_level": fund.risk_level or "",

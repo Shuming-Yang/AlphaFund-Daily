@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from alphafund.models import DividendRecord, Fund, NewsItem
-from alphafund.scoring import (growth_score, income_class_from_name,
-    is_leveraged_name, long_term_return, momentum, news_volume,
-    parse_return, preliminary_score, stability_persistence, stability_score,
-    strategy_from_signals)
+from alphafund.scoring import (dca_bonus_from_return, dca_return,
+    growth_score, income_class_from_name, is_leveraged_name, long_term_return,
+    momentum, news_volume, parse_return, preliminary_score,
+    stability_persistence, stability_score, strategy_from_signals)
 
 
 def _fund(code: str = "A", name: str = "X", returns: dict[str, str] | None = None,
@@ -142,16 +142,16 @@ def test_preliminary_score_news_bonus():
     ]
     score, breakdown = preliminary_score(f, news)
     assert breakdown["news_count"] == 2
-    assert breakdown["news_score"] == 4.0  # min(10, 2*2)
-    assert score == 4.0  # 成長/穩定皆無資料 → 0
+    assert breakdown["news_score"] == 2.0  # 2 × 1.0
+    assert score == 2.0  # 成長/穩定/DCA 無資料 → 0
 
 
-def test_preliminary_score_news_capped_at_10():
+def test_preliminary_score_news_capped_at_5():
     f = _fund(name="測試全球基金-美元", returns={k: "0" for k in ("navValue5", "navValue6", "navValue7", "navValue8")})
     news = [NewsItem(title=f"測試全球基金 新聞{i}", url=f"u{i}") for i in range(8)]
     score, breakdown = preliminary_score(f, news)
-    assert breakdown["news_score"] == 10.0  # 5 則封頂 10 分
-    assert score == 10.0
+    assert breakdown["news_score"] == 5.0  # 5 則封頂 5 分
+    assert score == 5.0
 
 
 def test_news_volume_matches_only_related():
@@ -304,3 +304,46 @@ def test_non_dividend_fund_no_income_bonus():
     assert breakdown["income_class"] == "累積型"
     assert breakdown["income_bonus"] == 0.0
     assert breakdown["yield_pct"] == 0.0
+
+
+def test_dca_return_positive_for_growth():
+    """穩定成長基金（2%/月量級）→ DCA 年報酬為正。"""
+    f = _fund(returns={"navValue5": "2", "navValue6": "6", "navValue7": "12", "navValue8": "24"},
+              nav="10.000000")
+    ret, cash = dca_return(f)
+    assert ret is not None and 0 < ret < 30
+    assert cash == 0.0
+
+
+def test_dca_return_none_without_anchors():
+    f = _fund(returns={}, nav="10.000000")
+    assert dca_return(f)[0] is None
+
+
+def test_dca_return_includes_dividend_cash():
+    """配息計入 DCA 現金流：含配息之年報酬高於不含。"""
+    base = {"navValue5": "2", "navValue6": "6", "navValue7": "12", "navValue8": "24"}
+    ret_no_div, _ = dca_return(_fund(returns=base, nav="10.000000"))
+    f = _fund(returns=base, nav="10.000000",
+              dividends=[DividendRecord(fund_code="A", base_date="2026/01/30", amount=0.5)])
+    ret, cash = dca_return(f)
+    assert ret is not None and cash > 0 and ret > ret_no_div  # type: ignore[operator]
+
+
+def test_dca_bonus_gate():
+    """DCA 加分：依年報酬×斜率，並乘穩定性門控（V 型高波動打折）。"""
+    assert dca_bonus_from_return(13.2, 35.0) == 5.3   # 13.2×0.4 = 5.28 → 5.3
+    assert dca_bonus_from_return(13.2, 17.5) == 2.6   # ×0.5 門控
+    assert dca_bonus_from_return(0, 35.0) == 0.0      # 負/零報酬無加分
+    assert dca_bonus_from_return(-3.0, 35.0) == 0.0
+    assert dca_bonus_from_return(100.0, 35.0) == 10.0  # 封頂
+
+
+def test_preliminary_score_includes_dca():
+    """初評分 breakdown 含 DCA 欄位。"""
+    f = _fund(returns={k: "5" for k in ("navValue5", "navValue6", "navValue7", "navValue8", "navValue9", "navValue10")},
+              nav="10.000000")
+    _, breakdown = preliminary_score(f, [])
+    assert "dca_bonus" in breakdown
+    assert "dca_return_pct" in breakdown
+    assert breakdown["dca_bonus"] > 0  # 穩定滿分門控不折扣

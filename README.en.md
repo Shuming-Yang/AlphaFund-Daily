@@ -137,7 +137,7 @@ The daily overall rating uses a multi-dimensional weighted design:
 The daily ranking is based on the **preliminary score**, computed by deterministic rules over the entire universe (`scoring.py`). The design is **stability-first** — stable profit beats high profit, sustained profit beats short-term spikes, steady growth beats high volatility (see [ADR-0012](./docs/adr/0012-stable-risk-adjusted-scoring.md)).
 
 ```
-Preliminary Score = Growth Quality(0–35) + Stability(0–35) + Income(0–15) + News(0–10) + Risk Adj(RR −8~+3) + Leverage Penalty(−15)
+Preliminary Score = Growth Quality(0–35) + Stability(0–35) + Income(0–15) + News(0–5) + DCA Bonus(0–10) + Risk Adj(RR −8~+3) + Leverage Penalty(−15)
 ```
 
 ### 1. Growth Quality (0–35) — Steady growth with diminishing returns
@@ -182,11 +182,28 @@ Income Bonus = max( min(15, Effective Yield × 2.0), tier floor )
 
 An effective yield of 7.5% reaches the +15 cap; distributing funds always keep a basic bonus (never zeroed).
 
-### 4. News Volume (0–10)
+### 4. News Volume (0–5)
 
-`min(10, # fund-specific news in 7 days × 2)` (capped at 5 items), counting only fund-specific matches to avoid cross-fund pollution.
+`min(5, # fund-specific news in 7 days × 1)` (capped at 5 items), counting only fund-specific matches to avoid cross-fund pollution. News is short-term noise, so it carries low weight.
 
-### 5. Risk Adjustment (−8~+3) — RR risk-rating level
+### 5. DCA Bonus (0–10) — Systematic-investing experience
+
+Simulates "investing USD 100 monthly for 12 months" (DCA, **estimated** — not real historical NAV):
+
+```
+DCA annual return % = (ending value + dividend cash − 1200) ÷ 1200 × 100
+Ending value  = accumulated units × latest NAV; dividends credited as cash on units held at each month (not reinvested)
+NAV path      = interpolated in log space from 1M/3M/6M/1Y return anchors over the past 12 months
+```
+
+```
+DCA Bonus = clamp(DCA annual return % × 0.4, 0, 10) × (Stability score ÷ 35)
+```
+
+- A 25% DCA return reaches full points; negative returns score 0.
+- **Stability gate**: multiplied by the stability score, so V-shaped high-volatility funds are discounted even with high DCA returns (consistent with "steady growth > high volatility").
+
+### 6. Risk Adjustment (−8~+3) — RR risk-rating level
 
 Source: TDCC `fund-basic/query-details` risk-reward level (RR1–RR5).
 
@@ -196,13 +213,13 @@ Source: TDCC `fund-basic/query-details` risk-reward level (RR1–RR5).
 
 High-risk (RR4/RR5) funds are penalized as unsuitable for long-term investing; low-risk (RR1/RR2) funds are rewarded.
 
-### 6. Leverage Penalty (−15)
+### 7. Leverage Penalty (−15)
 
 Names containing `槓桿｜放空｜反向｜Inverse｜Leveraged｜Daily Nx` (leveraged/inverse instruments) → −15. Currency-hedged classes (**Hedged/對沖**) are NOT penalized.
 
 ### Tunable Parameters (env vars)
 
-`GROWTH_MAX`, `GROWTH_DECAY`, `STABILITY_MAX_NEW`, `INCOME_BONUS`, `INCOME_YIELD_PER_POINT`, `INCOME_QUALITY_UNKNOWN`, `INCOME_BONUS_COMPLETE_FLOOR`, `INCOME_BONUS_NO_DATA_FLOOR`, `INCOME_BONUS_MISSING_FLOOR`, `INCOME_BONUS_PRINCIPAL_FLOOR`, `RISK_BONUS_RR1..RR5`, `LEVERAGE_PENALTY`.
+`GROWTH_MAX`, `GROWTH_DECAY`, `STABILITY_MAX_NEW`, `INCOME_BONUS`, `INCOME_YIELD_PER_POINT`, `INCOME_QUALITY_UNKNOWN`, `INCOME_BONUS_COMPLETE_FLOOR`, `INCOME_BONUS_NO_DATA_FLOOR`, `INCOME_BONUS_MISSING_FLOOR`, `INCOME_BONUS_PRINCIPAL_FLOOR`, `DCA_BONUS_MAX`, `DCA_RETURN_PER_POINT`, `DCA_INVEST_MONTHLY`, `RISK_BONUS_RR1..RR5`, `LEVERAGE_PENALTY`.
 
 ### Ranking
 

@@ -166,3 +166,9 @@ RISK_BONUS_RR: dict[str, float] = {
 }
 # 槓桿/放空/反向基金懲罰（貨幣避險級別之「對沖/Hedged」不算）
 LEVERAGE_PENALTY = float(os.environ.get("LEVERAGE_PENALTY", "15"))
+
+# --- DCA 定期定額加分（推估，0–10）---
+DCA_BONUS_MAX = float(os.environ.get("DCA_BONUS_MAX", "10"))            # DCA 加分上限
+DCA_RETURN_PER_POINT = float(os.environ.get("DCA_RETURN_PER_POINT", "0.4"))  # 每 1% DCA 年報酬折算分數（25% → 滿分）
+DCA_INVEST_MONTHLY = float(os.environ.get("DCA_INVEST_MONTHLY", "100"))  # 每月投入金額（美金）
+DCA_MONTHS = int(os.environ.get("DCA_MONTHS", "12"))                    # 模擬期間（月）

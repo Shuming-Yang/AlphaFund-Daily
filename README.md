@@ -137,7 +137,7 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 每日排名以「初評分」為依據，由程式規則對全體目標基金計算（`scoring.py`）。評分設計以**穩定導向**為核心——穩定獲利 > 高獲利、穩定持續獲利 > 短期高獲利、穩定成長 > 高波動（詳見 [ADR-0012](./docs/adr/0012-stable-risk-adjusted-scoring.md)）。
 
 ```
-初評分 = 成長品質(0–35) + 穩定持續(0–35) + 收入加分(0–15) + 新聞聲量(0–10) + 風險調整(RR −8~+3) + 槓桿懲罰(−15)
+初評分 = 成長品質(0–35) + 穩定持續(0–35) + 收入加分(0–15) + 新聞聲量(0–5) + DCA加分(0–10) + 風險調整(RR −8~+3) + 槓桿懲罰(−15)
 ```
 
 ### 1. 成長品質（0–35）— 穩定成長，報酬遞減
@@ -182,11 +182,28 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 
 有效配息率 7.5% 即達上限 +15；配息基金均有基本加分（不歸零）。
 
-### 4. 新聞聲量（0–10）
+### 4. 新聞聲量（0–5）
 
-`min(10, 近 7 日與基金特定相關新聞數 × 2)`（5 則封頂），僅計基金特定匹配新聞，消除跨基金污染。
+`min(5, 近 7 日與基金特定相關新聞數 × 1)`（5 則封頂），僅計基金特定匹配新聞，消除跨基金污染。新聞為短期雜訊，配分低。
 
-### 5. 風險調整（−8~+3）— RR 風險報酬等級
+### 5. DCA 定期定額加分（0–10）— 實際投入體驗
+
+模擬「每月投資 100 美金、為期 12 個月」之定期定額體驗（**推估**，非真實歷史淨值）：
+
+```
+DCA 年報酬% = (期末總值 + 配息現金 − 1200) ÷ 1200 × 100
+期末總值   = 累計買入單位 × 最新淨值；配息依月份以當時持有單位計現金（不再投資）
+路徑       = 以 1M/3M/6M/1Y 期間報酬錨點在 log 空間內插出過去 12 個月淨值
+```
+
+```
+DCA加分 = clamp(DCA年報酬% × 0.4, 0, 10) × (穩定持續分 ÷ 35)
+```
+
+- 報酬 25% 達滿分；負報酬無加分。
+- **穩定性門控**：乘穩定持續分，V 型高波動基金即使 DCA 報酬高也被打折（符合「穩定成長 > 高波動」）。
+
+### 6. 風險調整（−8~+3）— RR 風險報酬等級
 
 資料源：TDCC `fund-basic/query-details` 之風險報酬等級（RR1–RR5）。
 
@@ -196,13 +213,13 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 
 高風險（RR4/RR5）不適合長期投資 → 扣分；低風險（RR1/RR2）加分。
 
-### 6. 槓桿懲罰（−15）
+### 7. 槓桿懲罰（−15）
 
 名稱含 `槓桿｜放空｜反向｜Inverse｜Leveraged｜Daily Nx` 之槓桿/反向工具 → −15。**「對沖/Hedged」為貨幣避險級別（非對沖基金）不懲罰**。
 
 ### 可調整參數（環境變數）
 
-`GROWTH_MAX`、`GROWTH_DECAY`、`STABILITY_MAX_NEW`、`INCOME_BONUS`、`INCOME_YIELD_PER_POINT`、`INCOME_QUALITY_UNKNOWN`、`INCOME_BONUS_COMPLETE_FLOOR`、`INCOME_BONUS_NO_DATA_FLOOR`、`INCOME_BONUS_MISSING_FLOOR`、`INCOME_BONUS_PRINCIPAL_FLOOR`、`RISK_BONUS_RR1..RR5`、`LEVERAGE_PENALTY`。
+`GROWTH_MAX`、`GROWTH_DECAY`、`STABILITY_MAX_NEW`、`INCOME_BONUS`、`INCOME_YIELD_PER_POINT`、`INCOME_QUALITY_UNKNOWN`、`INCOME_BONUS_COMPLETE_FLOOR`、`INCOME_BONUS_NO_DATA_FLOOR`、`INCOME_BONUS_MISSING_FLOOR`、`INCOME_BONUS_PRINCIPAL_FLOOR`、`DCA_BONUS_MAX`、`DCA_RETURN_PER_POINT`、`DCA_INVEST_MONTHLY`、`RISK_BONUS_RR1..RR5`、`LEVERAGE_PENALTY`。
 
 ### 排名
 

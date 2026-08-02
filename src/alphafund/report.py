@@ -505,6 +505,10 @@ def _detail_card(
         f" ｜ 穩定持續 {pb.get('stability_score', '-')}"
         f" ｜ 新聞聲量 {pb.get('news_score', '-')}"
     )
+    dca_ret = pb.get("dca_return_pct") or 0.0
+    dca_bonus = pb.get("dca_bonus") or 0.0
+    if dca_ret and dca_ret != 0:
+        prelim_detail += f" ｜ DCA年報酬 {dca_ret:.1f}%（推估，+{dca_bonus:.1f}）"
     income_cls = income_class_from_name(fa.get("name", ""))
     income_suit = da.get("income_suitability") or ""
     eff_yield = pb.get("effective_yield_pct") or 0.0
