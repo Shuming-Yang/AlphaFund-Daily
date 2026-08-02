@@ -25,16 +25,20 @@ M1 快照 (universe+nav+news)
    └─ save_analysis() → analysis.json.gz
 ```
 
-## 3. 規則初評分（scoring.py）
+## 3. 規則初評分（scoring.py，ADR-0012 穩定導向）
 
-| 維度 | 權重 | 公式 |
+| 維度 | 配分 | 公式 |
 | :--- | :--- | :--- |
-| 績效動能 | 0–85 | `30 + 動能% × 1.5`（動能 = navValue5..8 加權期間報酬 0.15/0.25/0.25/0.35） |
-| 新聞聲量 | 0–15 | `min(15, 近7日相關新聞數 × 3)`（M1 新聞以系列關鍵字抓取，訊號弱） |
+| 成長品質 | 0–35 | `35 × (1 − e^(−長期報酬% / 40))`；長期報酬 = 6M×0.15 + 1Y×0.30 + 2Y×0.25 + 3Y×0.30（不含 1M/3M，報酬遞減） |
+| 穩定持續 | 0–35 | 長期正報酬(1Y/2Y/3Y 各+5) + 無深回撤(最差期分層) + 近期未急跌(1M/3M) |
+| 收入加分 | 0–15 | `max(min(15, 有效配息率×2.0), 四級保底)`；有效配息率 = 名目配息率 × 收益品質；保底：完整7/無資料5/折半4/真本金3 |
+| 新聞聲量 | 0–10 | `min(10, 近7日基金特定相關新聞數 × 2)`（5 則封頂） |
+| 風險調整 | −8~+3 | RR1 +3 / RR2 +1.5 / RR3 0 / RR4 −4 / RR5 −8（TDCC query-details） |
+| 槓桿懲罰 | −15 | 名稱含 槓桿｜放空｜反向｜Inverse｜Leveraged｜Daily Nx（貨幣避險「對沖/Hedged」不算） |
 
-- 排序：初評分 ↓ → 動能% ↓ → 名稱 ↑（確定性、可重現）。
+- 排序：初評分 ↓ → 長期報酬% ↓ → 名稱 ↑（確定性、可重現）。
 - 初評分僅用於篩選前段基金與提供完整排名；**前段之最終分數以 LLM 深度分析為準**。
-- 期間對應採 TDCC 慣例（navValue5..10 = 1M/3M/6M/1Y/2Y/3Y），待以歷史淨值 API 最終確認。
+- 配息資料源：TDCC `info-dividend/query`（`fetch_dividends`）；風險等級源：TDCC `fund-basic/query-details`（`fetch_fund_details`）。
 
 ## 4. LLM 深度分析（llm.py / analyzer.py）
 
@@ -62,7 +66,7 @@ M1 快照 (universe+nav+news)
       "name": "...",
       "currency": "USD",
       "preliminary_score": 93.9,
-      "preliminary_breakdown": {"momentum_score": 84.9, "news_score": 9.0, "momentum_pct": 36.57, "news_count": 3.0},
+      "preliminary_breakdown": {"growth_score": 30.0, "stability_score": 35.0, "income_bonus": 7.0, "news_score": 9.0, "risk_bonus": -4.0, "risk_level": "RR4", "effective_yield_pct": 3.5, "income_quality": 0.8, "long_term_return": 36.57, "news_count": 3.0},
       "rank": 1,
       "status": "deep_analyzed",
       "deep_analysis": {"news_summary": [...], "market_sentiment": "Positive", "value_score": 85, ...}

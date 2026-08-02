@@ -132,6 +132,82 @@ The daily overall rating uses a multi-dimensional weighted design:
 | Tranched Lump-Sum | Base-building complete, clear trend, volatility converging |
 | Hold / Wait | Signals unclear or negative risks unresolved |
 
+## Preliminary Score — Calculation Rules
+
+The daily ranking is based on the **preliminary score**, computed by deterministic rules over the entire universe (`scoring.py`). The design is **stability-first** — stable profit beats high profit, sustained profit beats short-term spikes, steady growth beats high volatility (see [ADR-0012](./docs/adr/0012-stable-risk-adjusted-scoring.md)).
+
+```
+Preliminary Score = Growth Quality(0–35) + Stability(0–35) + Income(0–15) + News(0–10) + Risk Adj(RR −8~+3) + Leverage Penalty(−15)
+```
+
+### 1. Growth Quality (0–35) — Steady growth with diminishing returns
+
+Weighted long-term return (**excluding 1M/3M**): `6M×0.15 + 1Y×0.30 + 2Y×0.25 + 3Y×0.30`, then scaled with **diminishing returns** so high profit cannot dominate:
+
+```
+Growth Quality = 35 × (1 − e^(−long-term return % / 40))
+```
+
+Reference: 8% → 6.9 pts, 25% → 16.4, 50% → 24.5, 100% → 31.8, 200% → 34.4. Negative long-term return → 0.
+
+### 2. Stability & Persistence (0–35) — Sustained profit, no deep drawdown
+
+| Component | Points | Rule |
+| :--- | :---: | :--- |
+| Sustained positive returns | 0–15 | +5 each for 1Y/2Y/3Y positive |
+| No deep drawdown | 0–12 | worst period ≥+5%→12, ≥0%→9, ≥−5%→6, ≥−15%→2, <−15%→0 |
+| No recent crash | 0–8 | 1M>−3% & 3M>−5%→8; 1M>−8% & 3M>−10%→5; 1M>−15%→2; else 0 |
+
+### 3. Income Bonus (0–15) — Effective yield with quality-tiered floors
+
+Dividends are scored using the **effective yield** (`models.py`):
+
+```
+Effective Yield = Nominal Yield (trailing 12M Σdistribution ÷ latest NAV) × Income Quality
+Income Quality (0–1) = amount-weighted average of the income-source ratio; records missing the ratio count as 50% income
+```
+
+Funds whose distributions come largely from principal (return of capital) are **discounted**:
+
+```
+Income Bonus = max( min(15, Effective Yield × 2.0), tier floor )
+```
+
+| Floor tier | Floor | Meaning |
+| :--- | :---: | :--- |
+| Complete (all ratios present, not all-principal) | 7 | Every distribution has a source ratio |
+| No dividend data (distribution class) | 5 | Classified as distributing but no records |
+| Half (has dividends, missing ratios) | 4 | Some/all distributions lack source ratios |
+| Pure principal (all ratios = 0) | 3 | Every distribution is 100% principal |
+
+An effective yield of 7.5% reaches the +15 cap; distributing funds always keep a basic bonus (never zeroed).
+
+### 4. News Volume (0–10)
+
+`min(10, # fund-specific news in 7 days × 2)` (capped at 5 items), counting only fund-specific matches to avoid cross-fund pollution.
+
+### 5. Risk Adjustment (−8~+3) — RR risk-rating level
+
+Source: TDCC `fund-basic/query-details` risk-reward level (RR1–RR5).
+
+| RR | RR1 | RR2 | RR3 | RR4 | RR5 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Adj | +3 | +1.5 | 0 | −4 | −8 |
+
+High-risk (RR4/RR5) funds are penalized as unsuitable for long-term investing; low-risk (RR1/RR2) funds are rewarded.
+
+### 6. Leverage Penalty (−15)
+
+Names containing `槓桿｜放空｜反向｜Inverse｜Leveraged｜Daily Nx` (leveraged/inverse instruments) → −15. Currency-hedged classes (**Hedged/對沖**) are NOT penalized.
+
+### Tunable Parameters (env vars)
+
+`GROWTH_MAX`, `GROWTH_DECAY`, `STABILITY_MAX_NEW`, `INCOME_BONUS`, `INCOME_YIELD_PER_POINT`, `INCOME_QUALITY_UNKNOWN`, `INCOME_BONUS_COMPLETE_FLOOR`, `INCOME_BONUS_NO_DATA_FLOOR`, `INCOME_BONUS_MISSING_FLOOR`, `INCOME_BONUS_PRINCIPAL_FLOOR`, `RISK_BONUS_RR1..RR5`, `LEVERAGE_PENALTY`.
+
+### Ranking
+
+Sorted by preliminary score ↓ → long-term return ↓ → name ↑ (deterministic, reproducible). The top funds then receive LLM deep analysis (40/40/20 value score), with a combined rating for final presentation.
+
 ## Tax & Asset Allocation Notes
 
 All targets in this project comply with Taiwan's Income Basic Tax Act (AMT); capital gains and distributions are 100% classified as offshore income.
