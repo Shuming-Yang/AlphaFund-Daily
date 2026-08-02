@@ -14,7 +14,7 @@ from .filters import filter_funds
 from .llm import LLMClient, QuotaExceeded, get_llm_client
 from .models import DailyAnalysis, DailySnapshot, Fund, FundAnalysis, NewsItem
 from .news import fund_matches_series, fund_matches_title, fetch_universe_news
-from .scoring import preliminary_score
+from .scoring import preliminary_score, strategy_from_signals
 from .tdcc import TdccClient
 
 logger = logging.getLogger(__name__)
@@ -197,6 +197,14 @@ def deep_analyze(
         try:
             raw = client.generate_json(SYSTEM_PROMPT, user_prompt)
             fa.deep_analysis = parse_deep_analysis(raw, fund.fund_code, date)
+            # 購入模式以規則覆寫（保證分化）；保留 LLM 原因
+            rule_strategy = strategy_from_signals(fund)
+            if rule_strategy != fa.deep_analysis.recommended_strategy:
+                fa.deep_analysis.strategy_explanation = (
+                    f"（依動能規則改判 {rule_strategy}）"
+                    + (fa.deep_analysis.strategy_explanation or "")
+                )
+            fa.deep_analysis.recommended_strategy = rule_strategy
             fa.status = "deep_analyzed"
             fa.provider = getattr(client, "provider", "")
             logger.info("[%d/%d] %s → %s（%s）", idx + 1, len(top), fund.name[:30],

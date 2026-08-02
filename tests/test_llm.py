@@ -370,7 +370,8 @@ def test_parse_deep_analysis():
     assert da.fund_code == "0352"
     assert da.value_score == 85
     assert da.market_sentiment == "Positive"
-    assert da.overall_rating == "值得關注"
+    assert da.overall_rating == "強力推薦"  # 分數驅動（85 → 強力推薦）
+    assert da.llm_rating == "值得關注"
     assert da.recommended_strategy == "定期定額"
 
 
@@ -402,12 +403,13 @@ def test_system_prompt_has_calibration_guidance():
     assert "強力推薦" in SYSTEM_PROMPT and "暫時避開" in SYSTEM_PROMPT
 
 
-def test_parse_rating_in_allowed_band_kept():
-    # 85 屬「值得關注」合理帶 [55,89] → 保留 LLM 判斷
+def test_parse_rating_score_driven_keeps_llm_rating():
+    # 評級一律由 value_score 決定（85 → 強力推薦）；LLM 原始評級存 llm_rating
     da = parse_deep_analysis(
         {"value_score": 85, "overall_rating": "值得關注"}, "0352", "2026-08-01"
     )
-    assert da.overall_rating == "值得關注"
+    assert da.overall_rating == "強力推薦"
+    assert da.llm_rating == "值得關注"
 
 
 def test_parse_rating_strong_rec_with_low_score_overridden():

@@ -65,7 +65,8 @@ class DeepAnalysis(BaseModel):
     strategy_explanation: str = ""
     pros: list[str] = Field(default_factory=list)
     cons: list[str] = Field(default_factory=list)
-    overall_rating: str = ""     # 強力推薦 / 值得關注 / 中立觀望 / 暫時避開
+    overall_rating: str = ""     # 最終評級（分數驅動，ADR-0010）
+    llm_rating: str = ""         # LLM 原始評級（供參考）
 
 
 class FundAnalysis(BaseModel):

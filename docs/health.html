@@ -43,12 +43,12 @@ footer{margin-top:36px;border-top:1px solid var(--line);padding-top:14px;font-si
 <div class="wrap">
 <header>
 <h1>🩺 系統健康</h1>
-<div class="meta">彙整每日資料管道執行狀態與 LLM 供應商使用 ｜ 頁面生成：2026-08-02 11:11（Asia/Taipei）</div>
+<div class="meta">彙整每日資料管道執行狀態與 LLM 供應商使用 ｜ 頁面生成：2026-08-02 11:28（Asia/Taipei）</div>
 </header>
-<div class="stat-row"><div class="stat"><b>2</b><span>歷史交易日</span></div><div class="stat"><b>2026-08-02</b><span>最新報告日期</span></div><div class="stat"><b>50</b><span>累計深度分析</span></div><div class="stat"><b>0</b><span>跳過/錯誤總數</span></div><div class="stat"><b>4</b><span>使用過之 LLM 供應商</span></div></div>
+<div class="stat-row"><div class="stat"><b>2</b><span>歷史交易日</span></div><div class="stat"><b>2026-08-02</b><span>最新報告日期</span></div><div class="stat"><b>50/50</b><span>深度分析（完成率 100.0%）</span></div><div class="stat"><b>0</b><span>跳過/錯誤總數</span></div><div class="stat"><b>4</b><span>使用過之 LLM 供應商</span></div></div>
 
 <h2>每日執行狀態</h2>
-<div class="scroll"><table><thead><tr><th>日期</th><th class="num">基金數</th><th class="num">深度分析</th><th class="num">跳過</th><th class="num">錯誤</th><th>供應商分布</th><th class="num">新聞數</th></tr></thead><tbody><tr><td>2026-08-01</td><td class="num">2128</td><td class="num"><span class="ok">25</span></td><td class="num">0</td><td class="num">0</td><td>cloudflare×19、gemini×3、groq×3</td><td class="num">395</td></tr><tr><td>2026-08-02</td><td class="num">2128</td><td class="num"><span class="ok">25</span></td><td class="num">0</td><td class="num">0</td><td>openrouter×25</td><td class="num">300</td></tr></tbody></table></div>
+<div class="scroll"><table><thead><tr><th>日期</th><th>狀態</th><th class="num">基金數</th><th class="num">深度分析</th><th class="num">跳過</th><th class="num">錯誤</th><th>供應商分布</th><th class="num">新聞數</th></tr></thead><tbody><tr><td>2026-08-01</td><td><span class="ok">完整</span></td><td class="num">2128</td><td class="num">25/25</td><td class="num">0</td><td class="num">0</td><td>cloudflare×19、gemini×3、groq×3</td><td class="num">395</td></tr><tr><td>2026-08-02</td><td><span class="ok">完整</span></td><td class="num">2128</td><td class="num">25/25</td><td class="num">0</td><td class="num">0</td><td>openrouter×25</td><td class="num">300</td></tr></tbody></table></div>
 
 <h2>LLM 供應商使用彙總</h2>
 <table><thead><tr><th>LLM 供應商</th><th class="num">深度分析次數</th></tr></thead><tbody><tr><td>openrouter</td><td class="num">25</td></tr><tr><td>cloudflare</td><td class="num">19</td></tr><tr><td>gemini</td><td class="num">3</td></tr><tr><td>groq</td><td class="num">3</td></tr></tbody></table>
@@ -56,7 +56,8 @@ footer{margin-top:36px;border-top:1px solid var(--line);padding-top:14px;font-si
 <h2>說明</h2>
 <div class="scroll" style="padding:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;font-size:13px">
 <ul style="margin:0;padding-left:18px">
-<li><b>深度分析</b>＝當日完成 LLM 深度分析之檔數（目標 25）。</li>
+<li><b>狀態</b>＝當日 run 結果：<span class="ok">完整</span>（深度分析達標且無跳過/錯誤/缺檔）／<span class="bad">部分</span>（深度不足或有跳過/錯誤/缺檔）／<span class="bad">異常</span>（缺分析資料）。</li>
+<li><b>深度分析</b>＝當日完成檔數／預期檔數（top_n）。</li>
 <li><b>跳過</b>＝供應商鏈全數額度用罄（429）而未分析；<b>錯誤</b>＝個別分析失敗。</li>
 <li><b>供應商分布</b>＝該日深度分析實際使用的 LLM 供應商與次數（供應商鏈自動切換）。</li>
 <li>資料來源：data/history/ 下之 analysis.json.gz 與 snapshot.json.gz。</li>

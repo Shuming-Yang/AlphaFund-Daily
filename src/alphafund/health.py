@@ -60,14 +60,32 @@ def _load_gz(path: Path) -> dict[str, Any]:
 
 
 def build_health_data() -> list[dict]:
-    """依 data/history/* 彙整每日健康資料。"""
+    """依 data/history/* 彙整每日健康資料（含 run 狀態與缺檔檢查）。"""
     entries: list[dict] = []
     for date in sorted(
         d.name for d in HISTORY_DIR.glob("????-??-??") if d.is_dir()
     ):
         day = HISTORY_DIR / date
+        required = ("snapshot.json.gz", "analysis.json.gz", "nav.json.gz", "news.json.gz")
+        missing = [f.removesuffix(".json.gz") for f in required if not (day / f).exists()]
+
         if not (day / "analysis.json.gz").exists():
+            entries.append(
+                {
+                    "date": date,
+                    "universe": 0,
+                    "deep": 0,
+                    "expected_deep": 0,
+                    "quota_skipped": 0,
+                    "error": 0,
+                    "providers": {},
+                    "news": 0,
+                    "run_status": "異常",
+                    "missing": missing,
+                }
+            )
             continue
+
         an = _load_gz(day / "analysis.json.gz")
         funds = an.get("funds", [])
         statuses = Counter(f.get("status") for f in funds)
@@ -79,17 +97,27 @@ def build_health_data() -> list[dict]:
         news = 0
         snap_path = day / "snapshot.json.gz"
         if snap_path.exists():
-            snap = _load_gz(snap_path)
-            news = len(snap.get("news", []))
+            news = len(_load_gz(snap_path).get("news", []))
+        expected = an.get("top_n", 25)
+        deep = an.get("deep_analyzed_count", 0)
+        skip = statuses.get("quota_skipped", 0)
+        err = statuses.get("error", 0)
+        if not missing and deep >= expected and skip == 0 and err == 0:
+            run_status = "完整"
+        else:
+            run_status = "部分"
         entries.append(
             {
                 "date": date,
                 "universe": len(funds),
-                "deep": an.get("deep_analyzed_count", 0),
-                "quota_skipped": statuses.get("quota_skipped", 0),
-                "error": statuses.get("error", 0),
+                "deep": deep,
+                "expected_deep": expected,
+                "quota_skipped": skip,
+                "error": err,
                 "providers": dict(providers),
                 "news": news,
+                "run_status": run_status,
+                "missing": missing,
             }
         )
     return entries
@@ -103,49 +131,52 @@ def _esc(value: object) -> str:
 
 def render_health_page(entries: list[dict], nav_html: str) -> str:
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
+    today = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d")
     total_days = len(entries)
     latest = entries[-1] if entries else None
     latest_date = latest["date"] if latest else "—"
 
     # 摘要統計
     deep_total = sum(e["deep"] for e in entries)
+    expected_total = sum(e["expected_deep"] for e in entries)
+    completion = round(deep_total / expected_total * 100, 1) if expected_total else 0.0
     err_total = sum(e["error"] + e["quota_skipped"] for e in entries)
     provider_agg: Counter[str] = Counter()
     for e in entries:
         provider_agg.update(e["providers"])
     provider_count = len(provider_agg)
+    stale = "" if not latest or latest_date == today else f"（最新 {latest_date}，非今日）"
 
     stats = (
         f'<div class="stat"><b>{total_days}</b><span>歷史交易日</span></div>'
-        f'<div class="stat"><b>{latest_date}</b><span>最新報告日期</span></div>'
-        f'<div class="stat"><b>{deep_total}</b><span>累計深度分析</span></div>'
+        f'<div class="stat"><b>{latest_date}</b><span>最新報告日期{stale}</span></div>'
+        f'<div class="stat"><b>{deep_total}/{expected_total}</b><span>深度分析（完成率 {completion}%）</span></div>'
         f'<div class="stat"><b>{err_total}</b><span>跳過/錯誤總數</span></div>'
         f'<div class="stat"><b>{provider_count}</b><span>使用過之 LLM 供應商</span></div>'
     )
 
     # 每日表格
+    status_cls = {"完整": "ok", "部分": "bad", "異常": "bad"}
     rows = []
     for e in entries:
         prov = "、".join(f"{k}×{v}" for k, v in sorted(e["providers"].items())) or "—"
-        skip_bad = (
-            e["quota_skipped"] or e["error"]
-        )
-        deep_cell = (
-            f'<span class="ok">{e["deep"]}</span>'
-            if not skip_bad
-            else f'<span class="bad">{e["deep"]}</span>'
+        missing_note = "、".join(e["missing"]) if e.get("missing") else ""
+        status = (
+            f'<span class="{status_cls.get(e["run_status"], "")}">{e["run_status"]}</span>'
+            + (f"<br><small>缺:{missing_note}</small>" if missing_note else "")
         )
         rows.append(
             f"<tr><td>{e['date']}</td>"
+            f"<td>{status}</td>"
             f'<td class="num">{e["universe"]}</td>'
-            f"<td class=\"num\">{deep_cell}</td>"
+            f'<td class="num">{e["deep"]}/{e["expected_deep"]}</td>'
             f'<td class="num">{e["quota_skipped"]}</td>'
             f'<td class="num">{e["error"]}</td>'
             f"<td>{_esc(prov)}</td>"
             f'<td class="num">{e["news"]}</td></tr>'
         )
     daily_table = (
-        '<table><thead><tr><th>日期</th><th class="num">基金數</th>'
+        '<table><thead><tr><th>日期</th><th>狀態</th><th class="num">基金數</th>'
         '<th class="num">深度分析</th><th class="num">跳過</th><th class="num">錯誤</th>'
         "<th>供應商分布</th><th class=\"num\">新聞數</th></tr></thead>"
         f"<tbody>{''.join(rows)}</tbody></table>"
@@ -187,7 +218,8 @@ def render_health_page(entries: list[dict], nav_html: str) -> str:
 <h2>說明</h2>
 <div class="scroll" style="padding:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;font-size:13px">
 <ul style="margin:0;padding-left:18px">
-<li><b>深度分析</b>＝當日完成 LLM 深度分析之檔數（目標 25）。</li>
+<li><b>狀態</b>＝當日 run 結果：<span class="ok">完整</span>（深度分析達標且無跳過/錯誤/缺檔）／<span class="bad">部分</span>（深度不足或有跳過/錯誤/缺檔）／<span class="bad">異常</span>（缺分析資料）。</li>
+<li><b>深度分析</b>＝當日完成檔數／預期檔數（top_n）。</li>
 <li><b>跳過</b>＝供應商鏈全數額度用罄（429）而未分析；<b>錯誤</b>＝個別分析失敗。</li>
 <li><b>供應商分布</b>＝該日深度分析實際使用的 LLM 供應商與次數（供應商鏈自動切換）。</li>
 <li>資料來源：data/history/ 下之 analysis.json.gz 與 snapshot.json.gz。</li>

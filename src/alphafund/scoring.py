@@ -31,7 +31,7 @@ NEWS_SCORE_PER_ITEM = 2.0  # 每則基金特定新聞加分
 _NON_NUM = re.compile(r"[^\d.\-+]")
 
 
-def parse_return(value: str) -> float | None:
+def parse_return(value: str | None) -> float | None:
     """解析 TDCC 報酬率字串（%、-、N/A → None）。"""
     if not value:
         return None
@@ -83,6 +83,23 @@ def news_volume(fund: Fund, news: list[NewsItem], days: int = 7) -> int:
     return count
 
 
+def strategy_from_signals(fund: Fund) -> str:
+    """依期間報酬規則判定購入模式（規則覆寫，保證分化；ADR-0003 兩階段精神）。
+
+    - 1 月報酬 ≥ 10% → 分批單筆（短期急漲，分批進場避免追高）。
+    - 1 年報酬 < 0 → 觀望。
+    - 其餘 → 定期定額（長期累積）。
+    """
+    r = fund.returns
+    m1 = parse_return(r.get("navValue5"))
+    y1 = parse_return(r.get("navValue8"))
+    if m1 is not None and m1 >= 10.0:
+        return "分批單筆"
+    if y1 is not None and y1 < 0:
+        return "觀望"
+    return "定期定額"
+
+
 def _clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
     return max(lo, min(hi, v))
 
@@ -93,8 +110,8 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
     if mom is None:
         score_m = 30.0
     else:
-        # ±20% 動能 → 分數 ±30（基準 30）；高動能基金仍可逼近上限但不致塞爆
-        score_m = _clamp(30.0 + mom * 1.5, 0.0, 85.0)
+        # 動能映射：±25% 動能 → ±30 分（基準 30）；上限 90，高動能仍具鑑別度
+        score_m = _clamp(30.0 + mom * 1.2, 0.0, 90.0)
 
     n = news_volume(fund, news)
     score_n = min(NEWS_SCORE_CAP, n * NEWS_SCORE_PER_ITEM)

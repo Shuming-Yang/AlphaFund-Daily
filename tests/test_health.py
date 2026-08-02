@@ -10,19 +10,25 @@ def _sample_entries():
             "date": "2026-08-01",
             "universe": 2128,
             "deep": 25,
+            "expected_deep": 25,
             "quota_skipped": 2,
             "error": 0,
             "providers": {"openrouter": 20, "gemini": 5},
             "news": 400,
+            "run_status": "部分",
+            "missing": [],
         },
         {
             "date": "2026-08-02",
             "universe": 2128,
             "deep": 25,
+            "expected_deep": 25,
             "quota_skipped": 0,
             "error": 0,
             "providers": {"openrouter": 25},
             "news": 399,
+            "run_status": "完整",
+            "missing": [],
         },
     ]
 
@@ -35,11 +41,14 @@ def test_render_health_page_sections():
     assert "openrouter×20" in html  # 每日供應商分布
     assert "2026-08-01" in html
     assert "2" in html  # 歷史交易日
+    assert "完整" in html and "部分" in html  # run 狀態
+    assert "完成率" in html  # 摘要完成率
 
 
 def test_build_health_data_reads_history():
     entries = health.build_health_data()
     assert len(entries) >= 1
     for e in entries:
-        assert {"date", "universe", "deep", "quota_skipped", "error", "providers", "news"} <= set(e)
+        assert {"date", "universe", "deep", "expected_deep", "quota_skipped", "error", "providers", "news", "run_status", "missing"} <= set(e)
         assert e["deep"] > 0  # 每日皆有深度分析
+        assert e["run_status"] in ("完整", "部分", "異常")

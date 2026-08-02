@@ -91,14 +91,12 @@ def build_user_prompt(fund: Fund, news: list[NewsItem], analysis_date: str) -> s
 """
 
 
-# 評級一致性校準（ADR-0010）：
-# - 每個評級對應之「合理 value_score 帶」：LLM 評級落於帶外時覆寫為分數門檻評級。
-# - 分數→評級門檻：空缺評級或帶外覆寫時使用。
+# 評級一致性校準（ADR-0010）：不重疊帶，評級由 value_score 決定
 RATING_BANDS: dict[str, tuple[float, float]] = {
-    "強力推薦": (75.0, 100.0),
-    "值得關注": (55.0, 89.0),
-    "中立觀望": (40.0, 74.0),
-    "暫時避開": (0.0, 54.0),
+    "強力推薦": (85.0, 100.0),
+    "值得關注": (70.0, 85.0),
+    "中立觀望": (50.0, 70.0),
+    "暫時避開": (0.0, 50.0),
 }
 
 RATING_ORDER = ["強力推薦", "值得關注", "中立觀望", "暫時避開"]
@@ -116,16 +114,14 @@ def _rating_from_score(value_score: float) -> str:
 
 
 def _enforce_rating_consistency(rating: str, value_score: float) -> str:
-    """評級與價值分數一致性：帶外覆寫 + 記錄（保留 LLM 語意，僅校正重大落差）。"""
-    if rating not in RATING_BANDS:
-        return rating
-    lo, hi = RATING_BANDS[rating]
-    if lo <= value_score <= hi:
-        return rating
+    """評級一致性：一律以 value_score 決定最終評級（分數驅動），
+    避免 LLM 因評級帶重疊而集中單一評級（ADR-0010）。"""
     corrected = _rating_from_score(value_score)
-    logger.warning(
-        "評級與分數不一致，覆寫 %s → %s（value_score=%.1f）", rating, corrected, value_score
-    )
+    if rating and rating != corrected:
+        logger.warning(
+            "評級由分數驅動覆寫：LLM %s → %s（value_score=%.1f）",
+            rating, corrected, value_score,
+        )
     return corrected
 
 
@@ -152,11 +148,8 @@ def parse_deep_analysis(
         value_score = 0.0
     value_score = max(0.0, min(100.0, value_score))
 
-    rating = str(data.get("overall_rating") or "")
-    if rating not in RATING_BANDS:
-        rating = _rating_from_score(value_score)
-    else:
-        rating = _enforce_rating_consistency(rating, value_score)
+    llm_rating = str(data.get("overall_rating") or "")
+    rating = _enforce_rating_consistency(llm_rating, value_score)
 
     return DeepAnalysis(
         fund_code=fund_code,
@@ -170,4 +163,5 @@ def parse_deep_analysis(
         pros=[str(x) for x in data.get("pros") or []],
         cons=[str(x) for x in data.get("cons") or []],
         overall_rating=rating,
+        llm_rating=llm_rating,
     )
