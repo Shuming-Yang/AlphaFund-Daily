@@ -4,6 +4,7 @@
 
 # AlphaFund-Daily — Daily AI Offshore Fund Research & Selection Report
 
+![Daily Report](https://github.com/Shuming-Yang/AlphaFund-Daily/actions/workflows/daily_report.yml/badge.svg)
 ![Last Commit](https://img.shields.io/github/last-commit/Shuming-Yang/AlphaFund-Daily)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Repo Size](https://img.shields.io/github/repo-size/Shuming-Yang/AlphaFund-Daily)
@@ -154,13 +155,15 @@ The tax advantages are especially suited to high-net-worth investors in the 20%�
 
 ## Report Page Structure
 
-The daily report page includes the following modules:
+The daily report page (docs/index.html, published via GitHub Pages) includes:
 
-- Full ranking table sorted by AI Value Score.
-- Per-fund deep dive: news summary, score rationale, buying pattern, and pros/cons.
-- Tax labels: offshore-income category, NHI supplementary premium exemption, applicable exemption amount.
-- Channel hints: which channel offers better fees or promotions.
-- Report date and data-source statement.
+- **Fund ranking table**: top 500 by preliminary score; columns = rank, fund name (with code), preliminary score, channel icons; supports name/code search and channel filtering.
+- **Per-fund deep dive**: collapsible cards with news summary, score rationale, deep score, rating, buying pattern, pros/cons, tax labels, and recent trend.
+- **History calendar**: browse past daily reports via a calendar (docs/archive/).
+- **Trend comparison**: case trend charts and multi-day side-by-side comparison (docs/trends.html).
+- **Full ranking**: complete fund ranking table (docs/ranking.html).
+- **System health**: daily pipeline status and LLM provider usage (docs/health.html).
+- **Tax notes & disclaimer**: offshore-income category, NHI supplementary premium exemption, exemption amount, and data sources.
 
 ## Automation & Quality Requirements
 
@@ -186,7 +189,7 @@ Detailed planning for each milestone will be expanded later using the "grill-wit
 
 ```
 ├── .github/workflows/        Daily 06:00 schedule
-├── src/alphafund/            M1–M5 package (tdcc/news/scoring/llm/analyzer/report/trends/pipeline/cli)
+├── src/alphafund/            M1–M6 package (tdcc/news/scoring/llm/analyzer/report/trends/health/pipeline/cli)
 ├── scripts/                  Entry points (run_m1.py)
 ├── data/
 │   └── history/<date>/       Daily snapshots (snapshot / nav / news / universe / analysis, .json.gz)
@@ -194,6 +197,7 @@ Detailed planning for each milestone will be expanded later using the "grill-wit
 │   ├── index.html            Daily report page (published via GitHub Pages, with calendar)
 │   ├── ranking.html          Full ranking table (latest full universe, channel filter)
 │   ├── trends.html           Trend comparison page
+│   ├── health.html           System health page (daily status + provider usage)
 │   ├── archive/<date>.html   Historical report archive (calendar browsing)
 │   ├── adr/                  Architecture decision records
 │   ├── m1-design.md          M1 design document

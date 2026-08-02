@@ -14,7 +14,7 @@ background:var(--bg);color:var(--ink);line-height:1.6}
 .navbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
 border-bottom:1px solid var(--line)}
 .nav-inner{width:min(96%,1280px);margin:0 auto;display:flex;align-items:center;justify-content:space-between;
-padding:10px 16px}
+padding:10px 16px;flex-wrap:wrap;row-gap:6px}
 .brand{font-weight:700;color:var(--brand);font-size:15px}
 .nav-links{display:flex;align-items:center;gap:4px}
 .nav-links a{color:var(--mut);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;white-space:nowrap}
@@ -118,11 +118,11 @@ background:var(--card);color:var(--ink);min-width:220px;flex:1 1 240px}
 </style>
 </head>
 <body>
-<nav class="navbar"><div class="nav-inner"><span class="brand">AlphaFund-Daily</span><span class="nav-links"><a href="index.html">最新報告</a><a class="active" href="ranking.html">🏆 完整排名</a><a href="trends.html">📈 趨勢</a><a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a></span></div></nav>
+<nav class="navbar"><div class="nav-inner"><span class="brand">AlphaFund-Daily</span><span class="nav-links"><a href="index.html">最新報告</a><a class="active" href="ranking.html">🏆 完整排名</a><a href="trends.html">📈 趨勢</a><a href="health.html">🩺 系統健康</a><a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a></span></div></nav>
 <div class="wrap">
 <header>
 <h1>🏆 完整排名表</h1>
-<div class="meta">報告日期：2026-08-02 ｜ 全體 2128 檔（三通路 × USD）｜ 頁面生成：2026-08-02 10:52（Asia/Taipei）</div>
+<div class="meta">報告日期：2026-08-02 ｜ 全體 2128 檔（三通路 × USD）｜ 頁面生成：2026-08-02 11:11（Asia/Taipei）</div>
 </header>
 <p style="font-size:13px;color:var(--mut)">依 AI 初評分（動能 + 新聞聲量）排序之完整排名；點通路可篩選上架通路。</p>
 <div class="rank-toolbar"><input type="search" class="rank-search" placeholder="🔍 搜尋名稱或代號" aria-label="搜尋名稱或代號" oninput="setSearch(this.value)"><span class="ch-filters" role="group" aria-label="銷售通路篩選"><span class="ch-label">通路：</span><button type="button" class="ch-chip active" data-c="all" onclick="setChannel('all')">全部 <b>2128</b></button><button type="button" class="ch-chip" data-c="元大證券" onclick="setChannel('元大證券')">元大證券 <b>1584</b></button><button type="button" class="ch-chip" data-c="匯豐銀行" onclick="setChannel('匯豐銀行')">匯豐銀行 <b>1692</b></button><button type="button" class="ch-chip" data-c="渣打銀行" onclick="setChannel('渣打銀行')">渣打銀行 <b>1578</b></button></span></div><script>

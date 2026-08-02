@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AlphaFund-Daily 系統健康</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--ink:#1a1d21;--mut:#6b7280;--line:#e5e7eb;
+--brand:#0b5b8c;--pos:#0a7a3d;--neg:#b02a2a;}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Noto Sans TC","PingFang TC",sans-serif;
+background:var(--bg);color:var(--ink);line-height:1.6}
+.wrap{width:min(96%,1280px);margin:0 auto;padding:24px 16px 48px}
+.navbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
+border-bottom:1px solid var(--line)}
+.nav-inner{width:min(96%,1280px);margin:0 auto;display:flex;align-items:center;justify-content:space-between;
+padding:10px 16px;flex-wrap:wrap;row-gap:6px}
+.brand{font-weight:700;color:var(--brand);font-size:15px}
+.nav-links{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.nav-links a{color:var(--mut);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;white-space:nowrap}
+.nav-links a:hover{background:#eef1f4;color:var(--ink)}
+.nav-links a.active{background:var(--brand);color:#fff;font-weight:600}
+header h1{font-size:22px;margin:0 0 4px;color:var(--brand)}
+header .meta{color:var(--mut);font-size:13px}
+.stat-row{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 16px;min-width:120px}
+.stat b{font-size:20px;display:block}
+.stat span{font-size:12px;color:var(--mut)}
+h2{font-size:16px;margin:28px 0 10px;border-left:4px solid var(--brand);padding-left:8px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px}
+th,td{text-align:left;padding:7px 10px;font-size:13px;border-bottom:1px solid var(--line)}
+th{background:#eef1f4}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+.ok{color:var(--pos);font-weight:600}
+.bad{color:var(--neg);font-weight:600}
+.scroll{overflow-x:auto;border-radius:8px}
+footer{margin-top:36px;border-top:1px solid var(--line);padding-top:14px;font-size:12px;color:var(--mut)}
+@media (max-width:640px){.f-body .col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav class="navbar"><div class="nav-inner"><span class="brand">AlphaFund-Daily</span><span class="nav-links"><a href="index.html">最新報告</a><a href="ranking.html">🏆 完整排名</a><a href="trends.html">📈 趨勢</a><a class="active" href="health.html">🩺 系統健康</a><a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a></span></div></nav>
+<div class="wrap">
+<header>
+<h1>🩺 系統健康</h1>
+<div class="meta">彙整每日資料管道執行狀態與 LLM 供應商使用 ｜ 頁面生成：2026-08-02 11:11（Asia/Taipei）</div>
+</header>
+<div class="stat-row"><div class="stat"><b>2</b><span>歷史交易日</span></div><div class="stat"><b>2026-08-02</b><span>最新報告日期</span></div><div class="stat"><b>50</b><span>累計深度分析</span></div><div class="stat"><b>0</b><span>跳過/錯誤總數</span></div><div class="stat"><b>4</b><span>使用過之 LLM 供應商</span></div></div>
+
+<h2>每日執行狀態</h2>
+<div class="scroll"><table><thead><tr><th>日期</th><th class="num">基金數</th><th class="num">深度分析</th><th class="num">跳過</th><th class="num">錯誤</th><th>供應商分布</th><th class="num">新聞數</th></tr></thead><tbody><tr><td>2026-08-01</td><td class="num">2128</td><td class="num"><span class="ok">25</span></td><td class="num">0</td><td class="num">0</td><td>cloudflare×19、gemini×3、groq×3</td><td class="num">395</td></tr><tr><td>2026-08-02</td><td class="num">2128</td><td class="num"><span class="ok">25</span></td><td class="num">0</td><td class="num">0</td><td>openrouter×25</td><td class="num">300</td></tr></tbody></table></div>
+
+<h2>LLM 供應商使用彙總</h2>
+<table><thead><tr><th>LLM 供應商</th><th class="num">深度分析次數</th></tr></thead><tbody><tr><td>openrouter</td><td class="num">25</td></tr><tr><td>cloudflare</td><td class="num">19</td></tr><tr><td>gemini</td><td class="num">3</td></tr><tr><td>groq</td><td class="num">3</td></tr></tbody></table>
+
+<h2>說明</h2>
+<div class="scroll" style="padding:12px;background:var(--card);border:1px solid var(--line);border-radius:8px;font-size:13px">
+<ul style="margin:0;padding-left:18px">
+<li><b>深度分析</b>＝當日完成 LLM 深度分析之檔數（目標 25）。</li>
+<li><b>跳過</b>＝供應商鏈全數額度用罄（429）而未分析；<b>錯誤</b>＝個別分析失敗。</li>
+<li><b>供應商分布</b>＝該日深度分析實際使用的 LLM 供應商與次數（供應商鏈自動切換）。</li>
+<li>資料來源：data/history/ 下之 analysis.json.gz 與 snapshot.json.gz。</li>
+</ul>
+</div>
+
+<footer>
+<p>本頁由每日自動化管線生成，反映每日 06:00 排程之執行結果。</p>
+</footer>
+</div>
+</body>
+</html>

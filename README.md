@@ -4,6 +4,7 @@
 
 # AlphaFund-Daily — 每日 AI 境外基金投研與優選報告
 
+![Daily Report](https://github.com/Shuming-Yang/AlphaFund-Daily/actions/workflows/daily_report.yml/badge.svg)
 ![Last Commit](https://img.shields.io/github/last-commit/Shuming-Yang/AlphaFund-Daily)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 ![Repo Size](https://img.shields.io/github/repo-size/Shuming-Yang/AlphaFund-Daily)
@@ -154,13 +155,15 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 
 ## 報告呈現架構
 
-每日報告頁面應包含以下內容模組：
+每日報告頁面（docs/index.html，GitHub Pages 發布）包含：
 
-- 全體標的之排名表單（依 AI 價值評分排序）。
-- 個案深度解讀：新聞摘要、評分理由、購入模式與優劣勢說明。
-- 稅務標籤：境外所得類別、免扣二代健保、適用免稅額度標示。
-- 通路提示：於何通路購買可能享較佳手續費或優惠。
-- 報告日期與資料來源聲明。
+- **基金排名表**：依初評分排序之前 500 名；欄位＝排名、基金名稱（含代號）、初評分、通路 icon；支援名稱/代號搜尋與通路篩選。
+- **個案深度解讀**：前段基金之可折疊卡片，含新聞摘要、評分理由、深度分數、評級、購入模式、優劣勢、稅務標籤與近期趨勢。
+- **歷史日曆**：月曆界面瀏覽每日歷史報告（docs/archive/）。
+- **趨勢比較**：個案趨勢圖與多日並排比較（docs/trends.html）。
+- **完整排名**：全體基金排名表（docs/ranking.html）。
+- **系統健康**：每日執行狀態與 LLM 供應商使用分布（docs/health.html）。
+- **稅務說明與免責聲明**：境外所得類別、免扣二代健保、適用免稅額度標示與資料來源。
 
 ## 自動化與品質要求
 
@@ -186,7 +189,7 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 
 ```
 ├── .github/workflows/        每日 06:00 排程
-├── src/alphafund/            M1–M5 套件（tdcc/news/scoring/llm/analyzer/report/trends/pipeline/cli）
+├── src/alphafund/            M1–M6 套件（tdcc/news/scoring/llm/analyzer/report/trends/health/pipeline/cli）
 ├── scripts/                  執行入口（run_m1.py）
 ├── data/
 │   └── history/<日期>/       每日快照（snapshot / nav / news / universe / analysis，.json.gz）
@@ -194,13 +197,15 @@ TDCC 境外基金資料無新臺幣（TWD）級別（見 ADR-0004），故幣別
 │   ├── index.html            每日報告頁面（GitHub Pages 發布，含日曆）
 │   ├── ranking.html          完整排名表（最新全體 2,128 列，含通路篩選）
 │   ├── trends.html           趨勢比較頁（趨勢圖 + 多日並排比較）
+│   ├── health.html           系統健康頁（每日執行狀態 + 供應商分布）
 │   ├── archive/<日期>.html   歷史報告存檔（日曆瀏覽）
 │   ├── adr/                  重大決策記錄
 │   ├── m1-design.md          M1 設計文件
 │   ├── m2-design.md          M2 設計文件
 │   ├── m3-design.md          M3 設計文件
 │   ├── m4-calendar-archive.md  M4 設計文件
-│   └── m5-trend-comparison.md  M5 設計文件
+│   ├── m5-trend-comparison.md  M5 設計文件
+│   └── m6-report-experience.md  M6 設計文件
 ├── tests/                    單元測試（fixtures）
 ├── README.md                 繁體中文（預設）
 ├── README.en.md              English

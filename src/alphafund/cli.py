@@ -38,7 +38,9 @@ def _build_parser() -> argparse.ArgumentParser:
     report.add_argument("--date", help="報告日期 YYYY-MM-DD（預設最新快照日期）")
     report.add_argument("--out", default=None, help="輸出檔路徑（預設 docs/index.html）")
 
-    archive = sub.add_parser("archive", help="重產全部歷史 archive 頁 + 首頁 + 完整排名頁 + 趨勢頁")
+    archive = sub.add_parser("archive", help="重產全部歷史 archive 頁 + 首頁 + 完整排名頁 + 趨勢頁 + 健康頁")
+
+    health = sub.add_parser("health", help="產生系統健康頁 docs/health.html（每日執行狀態 + 供應商分布）")
 
     trends = sub.add_parser("trends", help="生成趨勢比較頁 docs/trends.html")
 
@@ -84,7 +86,11 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "archive":
             from .report import generate_archive
             index, pages = generate_archive()
-            print(f"archive 已生成: 首頁 {index} + {len(pages)} 頁歷史報告 + 完整排名頁 + 趨勢頁")
+            print(f"archive 已生成: 首頁 {index} + {len(pages)} 頁歷史報告 + 完整排名頁 + 趨勢頁 + 健康頁")
+        elif args.cmd == "health":
+            from .health import generate_health
+            path = generate_health()
+            print(f"系統健康頁已生成: {path}")
         elif args.cmd == "trends":
             from .report import generate_trends
             path = generate_trends()

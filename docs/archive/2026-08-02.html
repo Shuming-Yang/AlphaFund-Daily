@@ -14,7 +14,7 @@ background:var(--bg);color:var(--ink);line-height:1.6}
 .navbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
 border-bottom:1px solid var(--line)}
 .nav-inner{width:min(96%,1280px);margin:0 auto;display:flex;align-items:center;justify-content:space-between;
-padding:10px 16px}
+padding:10px 16px;flex-wrap:wrap;row-gap:6px}
 .brand{font-weight:700;color:var(--brand);font-size:15px}
 .nav-links{display:flex;align-items:center;gap:4px}
 .nav-links a{color:var(--mut);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;white-space:nowrap}
@@ -118,11 +118,11 @@ background:var(--card);color:var(--ink);min-width:220px;flex:1 1 240px}
 </style>
 </head>
 <body>
-<nav class="navbar"><div class="nav-inner"><span class="brand">AlphaFund-Daily</span><span class="nav-links"><a href="../index.html">← 最新報告</a><a href="../ranking.html">🏆 完整排名</a><a href="../trends.html">📈 趨勢</a><a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a><span class="date-badge">2026-08-02</span></span></div></nav>
+<nav class="navbar"><div class="nav-inner"><span class="brand">AlphaFund-Daily</span><span class="nav-links"><a href="../index.html">← 最新報告</a><a href="../ranking.html">🏆 完整排名</a><a href="../trends.html">📈 趨勢</a><a href="../health.html">🩺 系統健康</a><a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a><span class="date-badge">2026-08-02</span></span></div></nav>
 <div class="wrap">
 <header>
 <h1>AlphaFund-Daily 每日境外基金投研報告</h1>
-<div class="meta">報告日期：2026-08-02 ｜ 頁面生成：2026-08-02 10:52（Asia/Taipei）</div>
+<div class="meta">報告日期：2026-08-02 ｜ 頁面生成：2026-08-02 11:11（Asia/Taipei）</div>
 </header>
 
 <details id="cal-panel" class="cal-wrap"><summary>📅 歷史日曆（預設收合，點此或上方導覽展開）</summary><div id="cal" class="cal" aria-label="歷史報告日曆"></div>

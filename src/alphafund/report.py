@@ -56,7 +56,7 @@ background:var(--bg);color:var(--ink);line-height:1.6}
 .navbar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);
 border-bottom:1px solid var(--line)}
 .nav-inner{width:min(96%,1280px);margin:0 auto;display:flex;align-items:center;justify-content:space-between;
-padding:10px 16px}
+padding:10px 16px;flex-wrap:wrap;row-gap:6px}
 .brand{font-weight:700;color:var(--brand);font-size:15px}
 .nav-links{display:flex;align-items:center;gap:4px}
 .nav-links a{color:var(--mut);text-decoration:none;font-size:13px;padding:5px 10px;border-radius:6px;white-space:nowrap}
@@ -236,11 +236,12 @@ def _calendar_panel(dates: list[str], current: str, base: str) -> str:
 
 
 def _navbar_html(is_latest: bool, date: str, active: str | None = None) -> str:
-    """固定頂部導覽列；active 指定目前頁面（index / ranking / trends），預設 index（archive 頁無高亮）。"""
+    """固定頂部導覽列；active 指定目前頁面（index / ranking / trends / health），預設 index（archive 頁無高亮）。"""
     active = active if active is not None else ("index" if is_latest else "")
     trends_href = "trends.html" if is_latest else "../trends.html"
     ranking_href = "ranking.html" if is_latest else "../ranking.html"
     index_href = "index.html" if is_latest else "../index.html"
+    health_href = "health.html" if is_latest else "../health.html"
 
     def link(href: str, label: str, key: str) -> str:
         cls = ' class="active"' if active == key else ""
@@ -251,6 +252,7 @@ def _navbar_html(is_latest: bool, date: str, active: str | None = None) -> str:
             link(index_href, "最新報告", "index")
             + link(ranking_href, "🏆 完整排名", "ranking")
             + link(trends_href, "📈 趨勢", "trends")
+            + link(health_href, "🩺 系統健康", "health")
             + '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
         )
     else:
@@ -258,6 +260,7 @@ def _navbar_html(is_latest: bool, date: str, active: str | None = None) -> str:
             link(index_href, "← 最新報告", "index")
             + link(ranking_href, "🏆 完整排名", "ranking")
             + link(trends_href, "📈 趨勢", "trends")
+            + link(health_href, "🩺 系統健康", "health")
             + '<a href="#" onclick="openCalPanel();return false;">📅 歷史日曆</a>'
             + f'<span class="date-badge">{_esc(date)}</span>'
         )
@@ -821,6 +824,9 @@ def generate_archive(docs_dir: Path | None = None) -> tuple[Path, list[Path]]:
     )
     generate_trends(docs_dir=docs_dir, series=series)
     generate_ranking(docs_dir=docs_dir)
+    from .health import generate_health
+
+    generate_health(docs_dir=docs_dir)
     return index, pages
 
 
@@ -891,6 +897,7 @@ def _trends_navbar_html() -> str:
         '<a href="index.html">最新報告</a>'
         '<a href="ranking.html">🏆 完整排名</a>'
         '<a class="active" href="trends.html">📈 趨勢</a>'
+        '<a href="health.html">🩺 系統健康</a>'
         "</span></div></nav>"
     )
 
