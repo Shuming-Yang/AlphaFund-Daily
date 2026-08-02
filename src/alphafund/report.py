@@ -142,7 +142,11 @@ td.cmp-miss{color:#b0b6bd;text-align:center}
 .ch-badges{display:inline-flex;justify-content:flex-end;gap:3px;flex-wrap:nowrap;white-space:nowrap;align-items:center}
 .ch-icon{display:inline-flex;line-height:0;vertical-align:middle}
 .ch-icon svg{display:block}
-td.rank-name{width:50%}
+table.rank th:nth-child(1),table.rank td:nth-child(1){width:10%}
+table.rank th:nth-child(2),table.rank td:nth-child(2){width:58%}
+table.rank th:nth-child(3),table.rank td:nth-child(3),
+table.rank th:nth-child(4),table.rank td:nth-child(4){width:16%;text-align:left}
+table.rank .ch-badges{justify-content:flex-start}
 .rank-name a{overflow-wrap:break-word;word-break:break-word}
 .code{display:block;font-size:11px;color:var(--mut);font-weight:400}
 .code-sum{font-size:11px;color:var(--mut);margin-left:6px}
@@ -717,7 +721,7 @@ def render_report(
 <details>
 <summary><span class="g">▶</span> 展開／收合{rank_label}</summary>
 <div style="max-height:480px;overflow:auto;border-radius:8px">
-<table>
+<table class="rank">
 <thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th>通路</th></tr></thead>
 <tbody>{rank_rows}</tbody>
 </table></div>
@@ -849,7 +853,7 @@ def _render_ranking_page(
 <p style="font-size:13px;color:var(--mut)">依 AI 初評分（動能 + 新聞聲量）排序之完整排名；點通路可篩選上架通路。</p>
 {filter_html}
 <div style="max-height:70vh;overflow:auto;border-radius:8px">
-<table>
+<table class="rank">
 <thead><tr><th>#</th><th>基金名稱</th><th class="num">初評分</th><th>通路</th></tr></thead>
 <tbody>{rank_rows}</tbody>
 </table></div>
