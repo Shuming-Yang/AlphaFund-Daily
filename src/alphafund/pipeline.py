@@ -148,23 +148,37 @@ def related_news(fund: Fund, news: list[NewsItem], limit: int = 10) -> list[News
 
 
 def compute_analysis(
-    funds: list[Fund], news: list[NewsItem]
+    funds: list[Fund],
+    news: list[NewsItem],
+    previous: DailyAnalysis | None = None,
 ) -> list[FundAnalysis]:
-    """全體初評分 + 排名（ADR-0003）。"""
+    """全體初評分 + 排名（ADR-0003）。
+
+    傳入 previous（既有分析）時，依 fund_code 回填既有 deep_analysis，
+    使重新評分（如 --no-llm）不遺失 LLM 深度分析結果。
+    """
+    prev_by_code: dict[str, FundAnalysis] = {}
+    if previous is not None:
+        prev_by_code = {f.fund_code: f for f in previous.funds}
+
     analyzed: list[FundAnalysis] = []
     for f in funds:
         score, breakdown = preliminary_score(f, news)
-        analyzed.append(
-            FundAnalysis(
-                fund_code=f.fund_code,
-                name=f.name,
-                currency=f.currency,
-                channels=f.channels,
-                preliminary_score=score,
-                preliminary_breakdown=breakdown,
-                status="scored",
-            )
+        fa = FundAnalysis(
+            fund_code=f.fund_code,
+            name=f.name,
+            currency=f.currency,
+            channels=f.channels,
+            preliminary_score=score,
+            preliminary_breakdown=breakdown,
+            status="scored",
         )
+        prev = prev_by_code.get(f.fund_code)
+        if prev is not None and prev.deep_analysis is not None:
+            fa.deep_analysis = prev.deep_analysis
+            fa.provider = prev.provider
+            fa.status = "deep_analyzed"
+        analyzed.append(fa)
     # 確定性排序：初評分 ↓ → 動能 ↓ → 名稱 ↑
     analyzed.sort(
         key=lambda a: (
@@ -239,18 +253,28 @@ def run_m2(
     logger.info("載入 %s 快照: %d 檔基金, %d 筆新聞", date,
                 len(snapshot.funds), len(snapshot.news))
 
-    analyzed = compute_analysis(snapshot.funds, snapshot.news)
+    # 載入既有分析（若有）以保留 deep_analysis（重新評分不遺失 LLM 結果）
+    previous: DailyAnalysis | None = None
+    prev_path = HISTORY_DIR / date / "analysis.json.gz"
+    if prev_path.exists():
+        try:
+            with gzip.open(prev_path, "rt", encoding="utf-8") as fh:
+                previous = DailyAnalysis.model_validate_json(fh.read())
+        except Exception:  # noqa: BLE001 — 舊資料缺欄亦可載入
+            logger.warning("既有分析載入失敗，將重新分析: %s", date)
+
+    analyzed = compute_analysis(snapshot.funds, snapshot.news, previous=previous)
     top = analyzed[:top_n]
     logger.info("初評分完成，前 %d 名送深度分析", len(top))
 
-    deep_analyzed = 0
     if llm and top:
         client = get_llm_client()
         try:
             deep_analyze(top, snapshot.funds, snapshot.news, date, client)
         finally:
             client.close()
-        deep_analyzed = sum(1 for a in top if a.status == "deep_analyzed")
+
+    deep_analyzed = sum(1 for a in analyzed if a.deep_analysis is not None)
 
     analysis = DailyAnalysis(
         date=date, top_n=len(top), deep_analyzed_count=deep_analyzed, funds=analyzed

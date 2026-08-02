@@ -28,6 +28,9 @@ SYSTEM_PROMPT = """你是資深境外基金與總體經濟分析師。你專業�
    - 僅在明顯負面訊號（重大風險／績效轉差／情緒偏空）時給 <40。
    - 避免將不同標的都評為相近分數（如一律 80 分）；依實際強度拉開差距。
 3. 購入模式：依波動度與趨勢判斷，選 定期定額 / 分批單筆 / 觀望 之一。
+3b. 長期投資與被動收入適合度（income_suitability）：以「長期投資 + 配息被動收入」為目標，
+    評估此基金之配息/收益可持續性、長期穩定性、是否配息來源可能為本金；
+    選 適合 / 普通 / 不適合 之一。
 4. 優劣勢：提供 2 個主要優勢 (pros) 與 2 個潛在風險 (cons)。
 5. 綜合評級：依整體情況選 強力推薦 / 值得關注 / 中立觀望 / 暫時避開 之一。
    評級決策指引：
@@ -48,6 +51,7 @@ SYSTEM_PROMPT = """你是資深境外基金與總體經濟分析師。你專業�
   "score_rationale": "評分理由（簡短）",
   "recommended_strategy": "定期定額|分批單筆|觀望",
   "strategy_explanation": "策略原因（簡短）",
+  "income_suitability": "適合|普通|不適合",
   "pros": ["優勢1", "優勢2"],
   "cons": ["風險1", "風險2"],
   "overall_rating": "強力推薦|值得關注|中立觀望|暫時避開"
@@ -164,4 +168,5 @@ def parse_deep_analysis(
         cons=[str(x) for x in data.get("cons") or []],
         overall_rating=rating,
         llm_rating=llm_rating,
+        income_suitability=str(data.get("income_suitability") or ""),
     )

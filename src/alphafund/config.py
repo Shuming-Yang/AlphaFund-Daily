@@ -121,3 +121,8 @@ GEMINI_TEMPERATURE = 0.2
 
 # 報告排名表顯示上限（universe 仍為全體，僅顯示前 N 名）
 RANKING_LIMIT = int(os.environ.get("RANKING_LIMIT", "500"))
+
+# 投資模式（預設：長期投資 + 被動收入）
+INVESTMENT_MODE = os.environ.get("INVESTMENT_MODE", "income_long_term")
+INCOME_BONUS = float(os.environ.get("INCOME_BONUS", "10"))   # 配息型收入加分
+STABILITY_MAX = float(os.environ.get("STABILITY_MAX", "5"))  # 穩定加分上限

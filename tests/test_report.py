@@ -488,3 +488,9 @@ def test_fund_news_list_falls_back_to_series():
     rel = _fund_news_list(fa, news)
     assert any(n["url"] == "u1" for n in rel)  # 系列 fallback
     assert all(n["url"] != "u2" for n in rel)
+
+
+def test_detail_card_income_tags():
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
+    assert "收益取向" in html
+    assert "配息型" in html or "累積型" in html or "其他" in html

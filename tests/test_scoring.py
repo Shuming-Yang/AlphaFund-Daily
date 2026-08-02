@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from alphafund.models import Fund, NewsItem
-from alphafund.scoring import momentum, news_volume, parse_return, preliminary_score, strategy_from_signals
+from alphafund.scoring import (income_class_from_name, momentum, news_volume,
+    parse_return, preliminary_score, stability_score, strategy_from_signals)
 
 
 def test_parse_return():
@@ -21,8 +22,8 @@ def test_momentum_weighted():
     )
     mom, _ = momentum(f)
     assert mom is not None
-    # (1*.15 + 3*.25 + 5*.25 + 10*.35) = 5.65
-    assert abs(mom - 5.65) < 1e-6
+    # 長期權重：(.05+.10+.20+.30)=.65 → (1*.05+3*.10+5*.20+10*.30)/.65 = 6.6923
+    assert abs(mom - 6.6923) < 1e-3
 
 
 def test_momentum_partial_fields():
@@ -33,16 +34,17 @@ def test_momentum_partial_fields():
     )
     mom, _ = momentum(f)
     assert mom is not None
-    # (3*.25 + 10*.35) / (.25+.35) = 7.0833
-    assert abs(mom - 7.0833) < 1e-3
+    # (.10+.30)=.40 → (3*.10+10*.30)/.40 = 8.25
+    assert abs(mom - 8.25) < 1e-3
 
 
 def test_preliminary_score_momentum_baseline():
     f = Fund(fund_code="A", name="X", returns={k: "5" for k in ("navValue5", "navValue6", "navValue7", "navValue8")})
     score, breakdown = preliminary_score(f, [])
-    # mom=5 → 30 + 5*1.2 = 36.0
+    # mom=5 → 30 + 5*1.2 = 36；全部正報酬 → 穩定 +5 = 41（非配息型無收入加分）
     assert breakdown["momentum_score"] == 36.0
-    assert score == 36.0
+    assert breakdown["stability_bonus"] == 5.0
+    assert score == 41.0
 
 
 def test_preliminary_score_news_bonus():
@@ -95,3 +97,29 @@ def test_strategy_from_signals():
     # 無資料 → 定期定額
     f = Fund(fund_code="D", name="W", returns={})
     assert strategy_from_signals(f) == "定期定額"
+
+
+def test_income_class_from_name():
+    assert income_class_from_name("聯博全球非投資等級債券基金-TA類型(穩定月配)(美元)") == "配息型"
+    # 揭露括號（配息來源可能為本金）不影響累積型判斷
+    assert income_class_from_name("富蘭克林坦伯頓全球投資系列-科技基金美元A(acc)股(本基金之配息來源可能為本金)") == "累積型"
+    assert income_class_from_name("某基金美元A累積") == "累積型"
+    assert income_class_from_name("施羅德環球基金系列－環球企業債券(美元)A1-累積") == "累積型"
+    assert income_class_from_name("完全無關鍵字基金") == "其他"
+    assert income_class_from_name("") == "其他"
+
+
+def test_stability_score():
+    f = Fund(fund_code="A", name="X", returns={k: "5" for k in ("navValue5", "navValue6", "navValue7", "navValue8", "navValue9", "navValue10")})
+    assert stability_score(f) == 1.0
+    f2 = Fund(fund_code="B", name="Y", returns={"navValue5": "-5", "navValue6": "5", "navValue7": "-2", "navValue8": "8", "navValue9": "3", "navValue10": "1"})
+    assert abs(stability_score(f2) - 4/6) < 1e-9  # 4/6 正
+
+
+def test_preliminary_score_income_bonus():
+    f = Fund(fund_code="A", name="聯博全球非投資等級債券基金-TA類型(穩定月配)(美元)", returns={k: "0" for k in ("navValue5", "navValue6", "navValue7", "navValue8")})
+    score, breakdown = preliminary_score(f, [])
+    # 配息型 +10（收入加分）；動能0→30、穩定0（全0非正）
+    assert breakdown["income_bonus"] == 10.0
+    assert breakdown["income_class"] == "配息型"
+    assert score == 40.0

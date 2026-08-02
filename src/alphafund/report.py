@@ -18,6 +18,7 @@ from zoneinfo import ZoneInfo
 from .config import CHANNELS, HISTORY_DIR, PROJECT_ROOT, TIMEZONE
 from .models import Fund
 from .news import fund_matches_series, fund_matches_title
+from .scoring import income_class_from_name
 from .trends import (
     DEFAULT_WINDOW,
     TrendPoint,
@@ -499,6 +500,11 @@ def _detail_card(
         f"<br>初評分細項：動能 {pb.get('momentum_score', '-')}"
         f" ｜ 新聞聲量 {pb.get('news_score', '-')}"
     )
+    income_cls = income_class_from_name(fa.get("name", ""))
+    income_suit = da.get("income_suitability") or ""
+    income_tag = f"<br>收益取向：{income_cls}"
+    if income_suit:
+        income_tag += f" ｜ 被動收入適合度：{income_suit}"
 
     rel_news = _fund_news_list(fa, news)
     if rel_news:
@@ -524,7 +530,7 @@ def _detail_card(
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 {_esc(nav.get("nav", "-"))}（{_esc(nav.get("nav_date", "-"))}）<br>
 期間報酬：{_returns_html(fa['fund_code'], nav_by_code)}<br>
-通路：{_esc("、".join(fa.get("channels", [])) or "-")}{prelim_detail}</div>
+通路：{_esc("、".join(fa.get("channels", [])) or "-")}{prelim_detail}{income_tag}</div>
 {_trend_block(fa['fund_code'], series)}
 <div class="blk"><h4>市場情緒</h4><span class="{sent_cls}">{_esc(sentiment)}</span>
 <h4>購入模式</h4>{_esc(da.get("recommended_strategy", "-"))}<br>

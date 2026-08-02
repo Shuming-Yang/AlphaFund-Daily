@@ -435,3 +435,14 @@ def test_parse_rating_empty_derived_from_score():
     assert da.overall_rating == "中立觀望"
     da = parse_deep_analysis({"value_score": 45}, "X", "2026-08-01")
     assert da.overall_rating == "暫時避開"
+
+
+def test_parse_income_suitability():
+    raw = {
+        "market_sentiment": "Neutral", "value_score": 75,
+        "overall_rating": "值得關注", "income_suitability": "適合",
+        "recommended_strategy": "定期定額",
+    }
+    da = parse_deep_analysis(raw, "X", "2026-08-01")
+    assert da.income_suitability == "適合"
+    assert da.overall_rating == "值得關注"  # 75 → 值得關注（70-84）

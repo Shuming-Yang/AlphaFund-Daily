@@ -1,9 +1,10 @@
 """規則初評分（ADR-0003）：以程式規則對全體目標基金計算分數，作為完整排名依據。
 
-輸入：M1 `nav.json` 之期間報酬（navValue5..10）與新聞聲量。
-維度：
-- 績效動能（0–85）：期間報酬加權，映射 30 + 動能% × 1.5。
+投資模式（預設「長期投資 + 被動收入」）：
+- 績效動能（0–85）：長期導向期間報酬加權（1M/3M/6M/1Y/2Y/3Y）。
 - 新聞聲量（0–10）：近 7 日基金特定相關新聞數（權重低，每則 +2、5 則封頂）。
+- 收入加分（0–10）：配息型基金 +10（被動收入導向）。
+- 穩定加分（0–5）：期間正報酬比例。
 評分刻意透明、可測試；前段基金之最終分數以 LLM 深度分析為準（40/40/20）。
 """
 from __future__ import annotations
@@ -12,23 +13,61 @@ import re
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from .config import TIMEZONE
+from .config import INCOME_BONUS, STABILITY_MAX, TIMEZONE
 from .models import Fund, NewsItem
 from .news import fund_matches_title
 
-# navValue5..10 對應期間權重（1M/3M/6M/1Y/2Y/3Y；1Y 與 6M 為主）
+# 長期導向期間權重（1M/3M/6M/1Y/2Y/3Y）：低短期、重長期
 PERIOD_WEIGHTS: dict[str, float] = {
-    "navValue5": 0.15,  # 1 月
-    "navValue6": 0.25,  # 3 月
-    "navValue7": 0.25,  # 6 月
-    "navValue8": 0.35,  # 1 年
+    "navValue5": 0.05,   # 1 月
+    "navValue6": 0.10,   # 3 月
+    "navValue7": 0.20,   # 6 月
+    "navValue8": 0.30,   # 1 年
+    "navValue9": 0.20,   # 2 年
+    "navValue10": 0.15,  # 3 年
 }
 
 # 新聞聲量權重（低）：佔比上限 ~10%（動能 85 + 新聞 10）
 NEWS_SCORE_CAP = 10.0      # 新聞聲量分上限（0–10）
 NEWS_SCORE_PER_ITEM = 2.0  # 每則基金特定新聞加分
 
+# 揭露括號（非級別類型）：含 本基金/Rule 144A/投資等級 之風險揭露，分類前移除
+_DISCLOSURE_RE = re.compile(
+    r"[（(][^（）()]*?(?:本基金|Rule\s*144A|投資等級)[^（）()]*?[）)]"
+)
+
+_INCOME_PAT = re.compile(
+    r"配息|Mdis|Dis\)|月配|季配|年配|穩定月配|固定配息|收益"
+)
+_ACC_PAT = re.compile(r"累積|acc\)|Acc\)|資本成長|增長")
+
 _NON_NUM = re.compile(r"[^\d.\-+]")
+
+
+def income_class_from_name(name: str) -> str:
+    """由基金名稱判斷收益類型（移除揭露括號後）。
+
+    配息型 → "配息型"；累積型 → "累積型"；其餘 → "其他"。
+    """
+    if not name:
+        return "其他"
+    cleaned = _DISCLOSURE_RE.sub("", name)
+    if _INCOME_PAT.search(cleaned):
+        return "配息型"
+    if _ACC_PAT.search(cleaned):
+        return "累積型"
+    return "其他"
+
+
+def stability_score(fund: Fund) -> float:
+    """期間正報酬比例（0–1）：期間報酬中為正值之比例。"""
+    values = [
+        parse_return(fund.returns.get(k, "")) for k in ("navValue5", "navValue6", "navValue7", "navValue8", "navValue9", "navValue10")
+    ]
+    values = [v for v in values if v is not None]
+    if not values:
+        return 0.0
+    return sum(1 for v in values if v > 0) / len(values)
 
 
 def parse_return(value: str | None) -> float | None:
@@ -110,16 +149,23 @@ def preliminary_score(fund: Fund, news: list[NewsItem]) -> tuple[float, dict[str
     if mom is None:
         score_m = 30.0
     else:
-        # 動能映射：±25% 動能 → ±30 分（基準 30）；上限 90，高動能仍具鑑別度
-        score_m = _clamp(30.0 + mom * 1.2, 0.0, 90.0)
+        # 動能映射：±25% 動能 → ±30 分（基準 30）；上限 85，保留收入/穩定加分空間
+        score_m = _clamp(30.0 + mom * 1.2, 0.0, 85.0)
 
     n = news_volume(fund, news)
     score_n = min(NEWS_SCORE_CAP, n * NEWS_SCORE_PER_ITEM)
 
-    total = round(score_m + score_n, 1)
+    income_cls = income_class_from_name(fund.name)
+    income_bonus = INCOME_BONUS if income_cls == "配息型" else 0.0
+    stab_bonus = round(stability_score(fund) * STABILITY_MAX, 1)
+
+    total = round(_clamp(score_m + score_n + income_bonus + stab_bonus, 0.0, 100.0), 1)
     breakdown = {
         "momentum_score": round(score_m, 2),
         "news_score": round(score_n, 2),
+        "income_bonus": round(income_bonus, 1),
+        "stability_bonus": round(stab_bonus, 1),
+        "income_class": income_cls,
         "momentum_pct": round(mom, 4) if mom is not None else 0.0,
         "news_count": float(n),
     }

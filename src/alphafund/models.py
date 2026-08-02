@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -68,6 +69,7 @@ class DeepAnalysis(BaseModel):
     cons: list[str] = Field(default_factory=list)
     overall_rating: str = ""     # 最終評級（分數驅動，ADR-0010）
     llm_rating: str = ""         # LLM 原始評級（供參考）
+    income_suitability: str = ""  # 長期投資+被動收入適合度（適合/普通/不適合）
 
 
 class FundAnalysis(BaseModel):
@@ -78,7 +80,7 @@ class FundAnalysis(BaseModel):
     currency: str = ""
     channels: list[str] = Field(default_factory=list)
     preliminary_score: float = 0.0
-    preliminary_breakdown: dict[str, float] = Field(default_factory=dict)
+    preliminary_breakdown: dict[str, Any] = Field(default_factory=dict)
     rank: int = 0
     deep_analysis: DeepAnalysis | None = None
     status: str = "scored"  # scored / deep_analyzed / quota_skipped / error
