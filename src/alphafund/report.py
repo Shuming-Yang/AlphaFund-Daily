@@ -155,6 +155,8 @@ table.rank .ch-badges{justify-content:flex-start}
 .code-sum{font-size:11px;color:var(--mut);margin-left:6px}
 .yield-tag{display:inline-block;margin-left:8px;padding:0 6px;border-radius:4px;font-size:11px;
 color:var(--acc,#2f7a57);background:rgba(47,122,87,.12);white-space:nowrap}
+.rr-tag{display:inline-block;margin-left:8px;padding:0 6px;border-radius:4px;font-size:11px;
+color:var(--mut,#8a6d3b);background:rgba(180,140,60,.14);white-space:nowrap}
 .rank-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
 .rank-search{padding:6px 12px;border:1px solid var(--line);border-radius:8px;font-size:13px;
 background:var(--card);color:var(--ink);min-width:220px;flex:1 1 240px}
@@ -499,13 +501,17 @@ def _detail_card(
 
     pb = fa.get("preliminary_breakdown") or {}
     prelim_detail = (
-        f"<br>初評分細項：動能 {pb.get('momentum_score', '-')}"
+        f"<br>初評分細項：成長品質 {pb.get('growth_score', '-')}"
+        f" ｜ 穩定持續 {pb.get('stability_score', '-')}"
         f" ｜ 新聞聲量 {pb.get('news_score', '-')}"
     )
     income_cls = income_class_from_name(fa.get("name", ""))
     income_suit = da.get("income_suitability") or ""
     yield_pct = pb.get("yield_pct") or 0.0
+    risk_level = pb.get("risk_level") or ""
     income_tag = f"<br>收益取向：{income_cls}"
+    if risk_level:
+        income_tag += f" ｜ 風險等級 {_esc(risk_level)}"
     if yield_pct and yield_pct > 0:
         income_tag += f" ｜ 近12M配息率 {yield_pct:.2f}%"
     if income_suit:
@@ -562,11 +568,13 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
         yield_tag = (
             f'<span class="yield-tag">配息率 {yield_pct:.2f}%</span>' if yield_pct and yield_pct > 0 else ""
         )
+        risk_level = (fa.get("preliminary_breakdown") or {}).get("risk_level") or ""
+        rr_tag = f'<span class="rr-tag">{_esc(risk_level)}</span>' if risk_level else ""
         rows.append(
             f"<tr data-ch=\"{_esc(ch)}\" data-search=\"{search}\">"
             f"<td class=\"num\">{fa['rank']}</td>"
             f"<td class=\"rank-name\"><a href=\"#fund-{_esc(fa['fund_code'])}\">{_esc(fa['name'])}</a>"
-            f"<span class=\"code\">{_esc(fa['fund_code'])}</span>{yield_tag}</td>"
+            f"<span class=\"code\">{_esc(fa['fund_code'])}</span>{rr_tag}{yield_tag}</td>"
             f"<td class=\"num\">{fa['preliminary_score']}</td>"
             f"<td>{_channel_badges(fa.get('channels') or [])}</td></tr>"
         )

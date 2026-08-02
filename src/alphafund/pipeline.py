@@ -87,6 +87,28 @@ def fetch_dividends(client: TdccClient, funds: list[Fund], months: int = DIVIDEN
     return with_data
 
 
+def fetch_fund_details(client: TdccClient, funds: list[Fund]) -> int:
+    """為全體基金抓取風險報酬等級（RR）/ 資產類別並寫入 Fund。"""
+    with_rr = 0
+    for idx, fund in enumerate(funds, start=1):
+        try:
+            d = client.query_fund_details(fund.fund_code)
+        except Exception as exc:  # noqa: BLE001 — 單檔失敗不中斷管道
+            logger.warning("基本資料查詢失敗 %s (%s): %s", fund.name[:24], fund.fund_code, exc)
+            continue
+        if not d:
+            continue
+        fund.risk_level = d.get("risk_level", "")
+        fund.asset_class = d.get("asset_class", "")
+        fund.invest_type = d.get("invest_type", "")
+        if fund.risk_level:
+            with_rr += 1
+        if idx % 500 == 0:
+            logger.info("基本資料進度: %d/%d（%d 檔有 RR）", idx, len(funds), with_rr)
+    logger.info("基本資料抓取完成: %d/%d 檔有風險等級", with_rr, len(funds))
+    return with_rr
+
+
 def _write_json_gz(path: Path, data) -> None:
     """以 gzip 壓縮寫入 JSON（歷史檔壓縮後單日約 0.3MB，利於 git 長期留存）。"""
     with gzip.open(path, "wt", encoding="utf-8") as fh:
@@ -128,12 +150,14 @@ def run_m1(
     news_limit: int | None = None,
     save: bool = True,
     dividend: bool = True,
+    details: bool = True,
 ) -> DailySnapshot:
     """執行完整 M1 管線並回傳快照。
 
     news_limit 指定時，新聞目標為「動能排序前 N 檔」而非清單前 N 檔，
     確保兩階段（ADR-0003）前段基金有新（涵蓋深度分析對象）。
     dividend 指定時，為配息候選基金抓取近 N 月配息紀錄（供配息率評分）。
+    details 指定時，為全體基金抓取風險報酬等級（RR）/ 資產類別（供風險評分）。
     """
     date = date or today_str()
     funds: list[Fund] = []
@@ -142,6 +166,8 @@ def run_m1(
         funds = build_universe(client)
         if dividend:
             fetch_dividends(client, funds)
+        if details:
+            fetch_fund_details(client, funds)
     if news_limit is None or news_limit > 0:
         targets = funds
         if news_limit is not None:
@@ -226,11 +252,11 @@ def compute_analysis(
             fa.provider = prev.provider
             fa.status = "deep_analyzed"
         analyzed.append(fa)
-    # 確定性排序：初評分 ↓ → 動能 ↓ → 名稱 ↑
+    # 確定性排序：初評分 ↓ → 長期報酬 ↓ → 名稱 ↑
     analyzed.sort(
         key=lambda a: (
             -a.preliminary_score,
-            -a.preliminary_breakdown.get("momentum_pct", 0.0),
+            -a.preliminary_breakdown.get("long_term_return", 0.0),
             a.name,
         )
     )

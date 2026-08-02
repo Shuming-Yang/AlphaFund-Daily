@@ -19,10 +19,12 @@ from .config import (
     TDCC_BASE_URL,
     TDCC_DIVIDEND_QUERY,
     TDCC_DIVIDEND_QUERY_TYPE,
+    TDCC_FUND_DETAILS,
     TDCC_FUND_QUERY,
     TDCC_ORG_BASIC,
     TDCC_ORG_DETAIL,
     REFERER_DIVIDEND,
+    REFERER_FUND_DETAILS,
     REFERER_FUND_SEARCH,
     REFERER_ORG_SEARCH,
     REFERER_SALES_FUND,
@@ -183,6 +185,33 @@ class TdccClient:
                 logger.warning("配息分頁超過 50 頁上限，停止分頁（%s）", fund_code)
                 break
         return [r for r in records if str(r.get("fundCode")) == fund_code]
+
+    @retry(
+        retry=retry_if_exception(_is_retryable_exc),
+        stop=stop_after_attempt(3),
+        wait=wait_fixed(2),
+        reraise=True,
+    )
+    def _query_fund_details(self, fund_code: str) -> dict[str, Any]:
+        return self._post(TDCC_FUND_DETAILS, {"fundCode": fund_code}, REFERER_FUND_DETAILS)
+
+    def query_fund_details(self, fund_code: str) -> dict[str, Any]:
+        """查單一基金基本資料（風險報酬等級 / 資產類別 / 投資類型）。
+
+        無資料或格式異常時回傳空 dict（不中斷管道）。
+        """
+        try:
+            data = self._query_fund_details(fund_code)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code in (404, 400):
+                return {}
+            raise
+        ft = data.get("fundType") or {}
+        return {
+            "risk_level": str(ft.get("fundRiskLevelTxt") or ""),
+            "asset_class": str(ft.get("fundAssetName") or ""),
+            "invest_type": str(ft.get("fundInvTypeName") or ""),
+        }
 
     def close(self) -> None:
         self._client.close()

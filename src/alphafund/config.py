@@ -60,11 +60,13 @@ REFERER_ORG_SEARCH = f"{TDCC_BASE_URL}/offshore/org-info/org-search"
 REFERER_SALES_FUND = f"{TDCC_BASE_URL}/offshore/org-info/sales-fund"
 REFERER_FUND_SEARCH = f"{TDCC_BASE_URL}/offshore/fund-info/fund-search"
 REFERER_DIVIDEND = f"{TDCC_BASE_URL}/offshore/fund-info/info-dividend"
+REFERER_FUND_DETAILS = f"{TDCC_BASE_URL}/offshore/fund-basic/fund-details"
 
 TDCC_ORG_BASIC = "/api/offshore/org-info/org-search/query-org-basic"
 TDCC_ORG_DETAIL = "/api/offshore/org-info/org-search/query-org-detail"
 TDCC_FUND_QUERY = "/api/offshore/fund-info/fund-search/query"
 TDCC_DIVIDEND_QUERY = "/api/offshore/fund-info/info-dividend/query"
+TDCC_FUND_DETAILS = "/api/offshore/fund-basic/query-details"
 
 # 配息查詢：以基金代碼當 searchName（關鍵字模式）精準查詢
 TDCC_DIVIDEND_QUERY_TYPE = "0"  # 0=關鍵字查詢（境外）；1=境外機構查詢
@@ -136,3 +138,26 @@ STABILITY_MAX = float(os.environ.get("STABILITY_MAX", "5"))  # 穩定加分上�
 
 # 配息率計算：近 N 個月配息總額 / 最新淨值
 DIVIDEND_MONTHS = int(os.environ.get("DIVIDEND_MONTHS", "12"))
+
+# --- 風險導向評分（ADR-0012）：穩定 > 高獲利，高風險懲罰 ---
+# 成長品質：長期報酬權重（6M/1Y/2Y/3Y），短線(1M/3M)不計入成長
+GROWTH_WEIGHTS: dict[str, float] = {
+    "navValue7": 0.15,   # 6 月
+    "navValue8": 0.30,   # 1 年
+    "navValue9": 0.25,   # 2 年
+    "navValue10": 0.30,  # 3 年
+}
+GROWTH_MAX = float(os.environ.get("GROWTH_MAX", "35"))       # 成長品質分上限
+GROWTH_DECAY = float(os.environ.get("GROWTH_DECAY", "40"))   # 報酬遞減常數（越高遞減越慢）
+STABILITY_MAX_NEW = float(os.environ.get("STABILITY_MAX_NEW", "35"))  # 穩定持續分上限
+
+# 風險報酬等級（RR1–RR5）調整：低風險加分、高風險扣分
+RISK_BONUS_RR: dict[str, float] = {
+    "RR1": float(os.environ.get("RISK_BONUS_RR1", "3")),
+    "RR2": float(os.environ.get("RISK_BONUS_RR2", "1.5")),
+    "RR3": 0.0,
+    "RR4": float(os.environ.get("RISK_BONUS_RR4", "-4")),
+    "RR5": float(os.environ.get("RISK_BONUS_RR5", "-8")),
+}
+# 槓桿/放空/反向基金懲罰（貨幣避險級別之「對沖/Hedged」不算）
+LEVERAGE_PENALTY = float(os.environ.get("LEVERAGE_PENALTY", "15"))

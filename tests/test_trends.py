@@ -30,7 +30,7 @@ def _fund(code: str, score: float, rank: int, deep: bool = True, date: str = "")
         "fund_code": code,
         "name": f"基金 {code}",
         "preliminary_score": score,
-        "preliminary_breakdown": {"momentum_pct": 1.0, "news_score": 0.0},
+        "preliminary_breakdown": {"long_term_return": 1.0, "news_score": 0.0},
         "rank": rank,
     }
     if deep:

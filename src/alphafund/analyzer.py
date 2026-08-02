@@ -88,6 +88,8 @@ def build_user_prompt(fund: Fund, news: list[NewsItem], analysis_date: str) -> s
 - 銷售通路：{'、'.join(fund.channels) or '-'}
 - 最新淨值：{fund.nav}（{fund.nav_date}）
 - 期間報酬率：{_format_returns(fund)}
+- 風險報酬等級：{fund.risk_level or '-'}
+- 資產類別：{fund.asset_class or '-'}
 - 分析日期：{analysis_date}
 
 ## 相關新聞

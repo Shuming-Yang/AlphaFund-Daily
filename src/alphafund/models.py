@@ -81,6 +81,9 @@ class Fund(BaseModel):
     returns: dict[str, str] = Field(default_factory=dict)  # 各期間報酬率
     channels: list[str] = Field(default_factory=list)      # 銷售通路中文名
     dividends: list[DividendRecord] = Field(default_factory=list)  # 近 N 月配息紀錄
+    risk_level: str = ""        # TDCC 風險報酬等級（RR1–RR5，空表未取得）
+    asset_class: str = ""       # 資產類別（股票型/固定收益型/平衡型…）
+    invest_type: str = ""       # 投資類型（區域/產業）
 
     def annualized_yield(self, months: int = 12) -> float | None:
         """近 N 個月配息率（%）：Σ每單位配息 / 最新淨值 × 100。

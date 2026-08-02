@@ -30,7 +30,7 @@ class TrendPoint:
     rank: int
     value_score: float | None = None
     overall_rating: str | None = None
-    momentum_pct: float | None = None
+    long_term_return: float | None = None
 
 
 def load_all_dates(history_dir: Path | None = None) -> list[str]:
@@ -76,9 +76,9 @@ def build_time_series(
                 rank=int(fa.get("rank", 0)),
                 value_score=da.get("value_score"),
                 overall_rating=da.get("overall_rating"),
-                momentum_pct=(
+                long_term_return=(
                     fa.get("preliminary_breakdown") or {}
-                ).get("momentum_pct"),
+                ).get("long_term_return"),
             )
             series.setdefault(code, []).append(point)
     return series

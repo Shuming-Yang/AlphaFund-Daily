@@ -140,3 +140,43 @@ def test_query_dividend_filters_substring_matches():
     records = client.query_dividend("0385", "2025/08", "2026/08")
     assert [r["fundCode"] for r in records] == ["0385", "0385"]
     client.close()
+
+
+def test_query_fund_details():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, text="<html></html>")
+        assert request.url.path == "/api/offshore/fund-basic/query-details"
+        body = json.loads(request.content)
+        assert body == {"fundCode": "1128"}
+        return httpx.Response(
+            200,
+            json={
+                "basicProfile": {"fundCode": "1128", "fundName": "黃金基金"},
+                "fundType": {
+                    "fundRiskLevelTxt": "RR5",
+                    "fundAssetName": "股票型/黃金貴金屬",
+                    "fundInvTypeName": "單一國家/瑞士",
+                },
+            },
+        )
+
+    client = _make_client(handler)
+    d = client.query_fund_details("1128")
+    assert d == {
+        "risk_level": "RR5",
+        "asset_class": "股票型/黃金貴金屬",
+        "invest_type": "單一國家/瑞士",
+    }
+    client.close()
+
+
+def test_query_fund_details_404_empty():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, text="<html></html>")
+        return httpx.Response(404, json={"message": "無資料"})
+
+    client = _make_client(handler)
+    assert client.query_fund_details("MISSING") == {}
+    client.close()

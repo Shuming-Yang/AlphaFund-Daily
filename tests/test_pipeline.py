@@ -127,3 +127,38 @@ def test_fetch_dividends_only_for_candidates():
     assert funds[0].dividends[0].amount == 0.10
     assert len(funds[2].dividends) == 0  # 累積型未被查詢
     client.close()
+
+
+def test_fetch_fund_details_writes_risk_fields():
+    """全體基金抓取 RR / 資產類別並寫入 Fund。"""
+    from alphafund.tdcc import TdccClient
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET":
+            return httpx.Response(200, text="<html></html>")
+        assert request.url.path == "/api/offshore/fund-basic/query-details"
+        body = json.loads(request.content)
+        if body["fundCode"] == "GOLD":
+            return httpx.Response(200, json={"fundType": {"fundRiskLevelTxt": "RR5",
+                                                          "fundAssetName": "股票型/黃金貴金屬",
+                                                          "fundInvTypeName": "區域"}})
+        if body["fundCode"] == "BOND":
+            return httpx.Response(200, json={"fundType": {"fundRiskLevelTxt": "RR2",
+                                                          "fundAssetName": "固定收益型/政府債",
+                                                          "fundInvTypeName": "全球"}})
+        return httpx.Response(404, json={"message": "無資料"})
+
+    transport = httpx.MockTransport(handler)
+    client = TdccClient(base_url="https://test.local", transport=transport)
+    funds = [
+        Fund(fund_code="GOLD", name="某黃金基金"),
+        Fund(fund_code="BOND", name="某政府債基金"),
+        Fund(fund_code="MISS", name="某查無基金"),
+    ]
+    count = pipeline.fetch_fund_details(client, funds)
+    assert count == 2
+    assert funds[0].risk_level == "RR5"
+    assert funds[0].asset_class == "股票型/黃金貴金屬"
+    assert funds[1].risk_level == "RR2"
+    assert funds[2].risk_level == ""  # 404 → 不寫入
+    client.close()

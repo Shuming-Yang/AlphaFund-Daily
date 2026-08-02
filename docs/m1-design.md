@@ -38,6 +38,8 @@ M1 前置 spike 的結論，決定了整體實作方向：
 | `POST /api/offshore/org-info/org-search/query-org-basic` | `{"orgType":"K"}` | 機構清單（K=證券商、N=銀行…） |
 | `POST /api/offshore/org-info/org-search/query-org-detail` | `{"orgCode":"K9800"}` | 某機構上架基金（代碼+名稱） |
 | `POST /api/offshore/fund-info/fund-search/query` | 篩選條件 + 分頁 | 境外基金記錄（幣別、淨值、報酬） |
+| `POST /api/offshore/fund-info/info-dividend/query` | `{queryType:"0", searchName:<基金代碼>, baseBeginDate, baseEndDate, ...}` | 單一基金近 N 月配息紀錄（searchName 為子字串比對，需依 fundCode 完全相符過濾；404 表無配息） |
+| `POST /api/offshore/fund-basic/query-details` | `{"fundCode":"0385"}` | 單一基金基本資料（RR 風險報酬等級、資產類別、投資類型） |
 
 ### 3.2 三家通路機構代碼
 

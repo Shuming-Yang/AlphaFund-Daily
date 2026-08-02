@@ -27,7 +27,7 @@ def _sample_data():
                 "currency": "USD",
                 "channels": ["元大證券", "匯豐銀行", "渣打銀行"],
                 "preliminary_score": 93.9,
-                "preliminary_breakdown": {"momentum_score": 84.9, "news_score": 9.0},
+                "preliminary_breakdown": {"growth_score": 30.0, "stability_score": 25.0, "news_score": 9.0},
                 "rank": 1,
                 "status": "deep_analyzed",
                 "deep_analysis": {
