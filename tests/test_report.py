@@ -311,6 +311,15 @@ def test_ranking_rows_have_code_subtitle_and_data_search():
     assert "富蘭克林坦伯頓全球投資系列-日本基金美元a (acc)股 0352" in html
 
 
+def test_ranking_rows_name_column_proportional_width():
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
+    # 名稱欄 class + 50% 寬度（表格比例），通路 icon 單行
+    assert 'class="rank-name"' in html
+    assert "td.rank-name{width:50%}" in html
+    # 通路 icon 容器不換行
+    assert "flex-wrap:nowrap" in html
+
+
 def test_detail_card_has_data_ch():
     html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
     assert 'id="fund-0352" data-ch="元大證券,匯豐銀行,渣打銀行"' in html

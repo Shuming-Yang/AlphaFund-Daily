@@ -139,9 +139,11 @@ td.cmp-miss{color:#b0b6bd;text-align:center}
 .ch-chip.active b{opacity:.9;color:#fff}
 .ch-dist{font-size:13px;color:var(--ink);margin:12px 0 0}
 .ch-dist b{font-variant-numeric:tabular-nums}
-.ch-badges{display:inline-flex;justify-content:flex-end;gap:3px;flex-wrap:wrap;align-items:center}
+.ch-badges{display:inline-flex;justify-content:flex-end;gap:3px;flex-wrap:nowrap;white-space:nowrap;align-items:center}
 .ch-icon{display:inline-flex;line-height:0;vertical-align:middle}
 .ch-icon svg{display:block}
+td.rank-name{width:50%}
+.rank-name a{overflow-wrap:break-word;word-break:break-word}
 .code{display:block;font-size:11px;color:var(--mut);font-weight:400}
 .code-sum{font-size:11px;color:var(--mut);margin-left:6px}
 .rank-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}
@@ -510,7 +512,7 @@ def _ranking_rows(analysis: dict, nav_by_code: dict[str, dict], limit: int = 0) 
         rows.append(
             f"<tr data-ch=\"{_esc(ch)}\" data-search=\"{search}\">"
             f"<td class=\"num\">{fa['rank']}</td>"
-            f"<td><a href=\"#fund-{_esc(fa['fund_code'])}\">{_esc(fa['name'])}</a>"
+            f"<td class=\"rank-name\"><a href=\"#fund-{_esc(fa['fund_code'])}\">{_esc(fa['name'])}</a>"
             f"<span class=\"code\">{_esc(fa['fund_code'])}</span></td>"
             f"<td class=\"num\">{fa['preliminary_score']}</td>"
             f"<td class=\"num\">{deep_txt}</td>"
