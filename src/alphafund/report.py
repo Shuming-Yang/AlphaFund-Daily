@@ -142,8 +142,8 @@ td.cmp-miss{color:#b0b6bd;text-align:center}
 .ch-badges{display:inline-flex;justify-content:flex-end;gap:3px;flex-wrap:nowrap;white-space:nowrap;align-items:center}
 .ch-icon{display:inline-flex;line-height:0;vertical-align:middle}
 .ch-icon svg{display:block}
-table.rank th:nth-child(1),table.rank td:nth-child(1){width:10%}
-table.rank th:nth-child(2),table.rank td:nth-child(2){width:58%}
+table.rank th:nth-child(1),table.rank td:nth-child(1){width:8%}
+table.rank th:nth-child(2),table.rank td:nth-child(2){width:60%}
 table.rank th:nth-child(3),table.rank td:nth-child(3),
 table.rank th:nth-child(4),table.rank td:nth-child(4){width:16%;text-align:left}
 table.rank .ch-badges{justify-content:flex-start}

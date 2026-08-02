@@ -313,11 +313,11 @@ def test_ranking_rows_have_code_subtitle_and_data_search():
 
 def test_ranking_rows_name_column_proportional_width():
     html = render_report(_sample_data(), _sample_nav(), "2026-08-01")
-    # 排名表欄位寬度比例（#10 / 名稱58 / 初評分16 / 通路16）與靠左
+    # 排名表欄位寬度比例（#8 / 名稱60 / 初評分16 / 通路16）與靠左
     assert 'class="rank"' in html
     assert 'class="rank-name"' in html
-    assert "table.rank th:nth-child(2),table.rank td:nth-child(2){width:58%}" in html
-    assert "table.rank th:nth-child(1),table.rank td:nth-child(1){width:10%}" in html
+    assert "table.rank th:nth-child(2),table.rank td:nth-child(2){width:60%}" in html
+    assert "table.rank th:nth-child(1),table.rank td:nth-child(1){width:8%}" in html
     assert "width:16%;text-align:left" in html
     # 通路 icon 容器不換行
     assert "flex-wrap:nowrap" in html
