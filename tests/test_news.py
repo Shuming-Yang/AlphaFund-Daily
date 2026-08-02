@@ -106,3 +106,39 @@ def test_fetch_universe_news_dual_query_dedupes(monkeypatch, google_news_rss_xml
     # 日本基金(特定) + 東歐基金(特定) + 系列(一次) = 3 次
     assert calls["n"] == 3
     assert len(items) == 2  # 兩則新聞（跨呼叫去重）
+
+
+def test_normalize_title():
+    assert news_mod._normalize_title("  測試 基金！漲 5% ") == "測試基金漲5"
+    assert news_mod._normalize_title("ABC News: Test") == "abcnewstest"
+
+
+def test_fetch_universe_news_event_dedup(monkeypatch):
+    """同事件（相似標題、不同 URL/來源）只保留一則。"""
+    rss = """<?xml version="1.0"?><rss version="2.0"><channel>
+      <item><title>測試基金 報酬亮眼</title><link>https://a.com/1</link><source>鉅亨網</source></item>
+      <item><title>測試基金 報酬亮眼</title><link>https://b.com/2</link><source>經濟日報</source></item>
+      <item><title>另一則完全不同新聞</title><link>https://c.com/3</link><source>中央社</source></item>
+    </channel></rss>"""
+
+    class FakeResp:
+        status_code = 200
+        content = rss.encode()
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(news_mod.httpx, "get", lambda *a, **k: FakeResp())
+    monkeypatch.setattr(news_mod.time, "sleep", lambda *a: None)
+
+    funds = [
+        Fund(fund_code="X", name="測試基金-美元"),
+        Fund(fund_code="Y", name="其他基金-美元"),
+    ]
+    items = news_mod.fetch_universe_news(funds, max_per_fund=5)
+    # 兩則相似標題合併為一則事件；其餘一則
+    titles = [i.title for i in items]
+    assert titles.count("測試基金 報酬亮眼") == 1
+    assert "另一則完全不同新聞" in titles
+    # 每則帶 keywords
+    assert items and all(getattr(i, "keywords", []) for i in items if i.title == "測試基金 報酬亮眼")

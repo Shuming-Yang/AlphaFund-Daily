@@ -38,6 +38,7 @@ class NewsItem(BaseModel):
     source: str = ""
     published_at: str = ""
     summary: str = ""
+    keywords: list[str] = Field(default_factory=list)  # 抓取時所用查詢關鍵字
 
 
 class DailySnapshot(BaseModel):

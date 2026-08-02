@@ -462,3 +462,29 @@ def test_trend_mini_table_value_score_column():
     assert "深度分數" in html
     assert "<td class=\"num\">85</td>" in html   # 有深度分數日
     assert "<td class=\"num\">—</td>" in html    # 無深度分數日
+
+
+def test_detail_card_news_source_list_and_prelim_detail():
+    news = [
+        {"title": "富蘭克林坦伯頓全球投資系列-日本基金 報酬亮眼",
+         "url": "https://example.com/1", "source": "鉅亨網",
+         "published_at": "2026-08-01", "keywords": ["日本基金"]},
+    ]
+    html = render_report(_sample_data(), _sample_nav(), "2026-08-01", news=news)
+    assert "相關新聞來源" in html
+    assert "https://example.com/1" in html
+    assert "鉅亨網" in html
+    assert "初評分細項" in html
+    assert "動能" in html
+
+
+def test_fund_news_list_falls_back_to_series():
+    from alphafund.report import _fund_news_list
+    fa = _sample_data()["funds"][0]  # 0352 富蘭克林...-日本基金
+    news = [
+        {"title": "富蘭克林坦伯頓全球投資系列 市場動態", "url": "u1", "source": "中央社", "keywords": []},
+        {"title": "完全不相干內容", "url": "u2", "source": "鉅亨網", "keywords": []},
+    ]
+    rel = _fund_news_list(fa, news)
+    assert any(n["url"] == "u1" for n in rel)  # 系列 fallback
+    assert all(n["url"] != "u2" for n in rel)

@@ -16,6 +16,8 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from .config import CHANNELS, HISTORY_DIR, PROJECT_ROOT, TIMEZONE
+from .models import Fund
+from .news import fund_matches_series, fund_matches_title
 from .trends import (
     DEFAULT_WINDOW,
     TrendPoint,
@@ -281,11 +283,12 @@ def _load_gz(path: Path):
         return json.load(fh)
 
 
-def load_report_data(date: str) -> tuple[dict, dict[str, dict]]:
+def load_report_data(date: str) -> tuple[dict, dict[str, dict], list[dict]]:
     day = HISTORY_DIR / date
     analysis = _load_gz(day / "analysis.json.gz")
     nav = _load_gz(day / "nav.json.gz")
-    return analysis, {n["fund_code"]: n for n in nav}
+    news = _load_gz(day / "news.json.gz")
+    return analysis, {n["fund_code"]: n for n in nav}, news
 
 
 def _returns_html(fund_code: str, nav_by_code: dict[str, dict]) -> str:
@@ -463,10 +466,23 @@ def _rank_spark_cell(
     return f"<td>{spark}</td>"
 
 
+def _fund_news_list(fa: dict, news: list[dict] | None, limit: int = 5) -> list[dict]:
+    """與基金相關之新聞（WP3 分層：基金特定優先，無則系列 fallback）。"""
+    if not news:
+        return []
+    fund = Fund(fund_code=fa.get("fund_code", ""), name=fa.get("name", ""))
+    specific = [n for n in news if fund_matches_title(fund, n.get("title") or "")]
+    pool = specific or [
+        n for n in news if fund_matches_series(fund, n.get("title") or "")
+    ]
+    return pool[:limit]
+
+
 def _detail_card(
     fa: dict,
     nav_by_code: dict[str, dict],
     series: dict[str, list[TrendPoint]] | None = None,
+    news: list[dict] | None = None,
 ) -> str:
     da = fa.get("deep_analysis") or {}
     name = fa["name"]
@@ -478,6 +494,26 @@ def _detail_card(
     score_txt = f"{score:.0f}" if score is not None else "-"
     search = _esc(f"{fa['name']} {fa['fund_code']}".lower())
 
+    pb = fa.get("preliminary_breakdown") or {}
+    prelim_detail = (
+        f"<br>初評分細項：動能 {pb.get('momentum_score', '-')}"
+        f" ｜ 新聞聲量 {pb.get('news_score', '-')}"
+    )
+
+    rel_news = _fund_news_list(fa, news)
+    if rel_news:
+        lis = "".join(
+            f'<li><a href="{_esc(n.get("url", ""))}" target="_blank" rel="noopener">'
+            f"{_esc(n.get('title', ''))}</a> "
+            f'<small>{_esc(n.get("source", ""))} · {_esc(n.get("published_at", ""))}</small></li>'
+            for n in rel_news
+        )
+        news_html = (
+            f'<div class="blk"><h4>相關新聞來源</h4><ul class="news-src">{lis}</ul></div>'
+        )
+    else:
+        news_html = ""
+
     return f"""<details id="fund-{_esc(fa['fund_code'])}" data-ch="{_esc(','.join(fa.get('channels', [])))}" data-search="{search}">
 <summary><span class="g">#{fa['rank']}</span>{_esc(name)}
 <span class="code-sum">{_esc(fa['fund_code'])}</span>
@@ -488,7 +524,7 @@ def _detail_card(
 <div class="col">
 <div class="blk"><h4>淨值資訊</h4>淨值 {_esc(nav.get("nav", "-"))}（{_esc(nav.get("nav_date", "-"))}）<br>
 期間報酬：{_returns_html(fa['fund_code'], nav_by_code)}<br>
-通路：{_esc("、".join(fa.get("channels", [])) or "-")}</div>
+通路：{_esc("、".join(fa.get("channels", [])) or "-")}{prelim_detail}</div>
 {_trend_block(fa['fund_code'], series)}
 <div class="blk"><h4>市場情緒</h4><span class="{sent_cls}">{_esc(sentiment)}</span>
 <h4>購入模式</h4>{_esc(da.get("recommended_strategy", "-"))}<br>
@@ -496,6 +532,7 @@ def _detail_card(
 <div class="blk"><h4>新聞摘要</h4><ul>
 {''.join(f"<li>{_esc(x)}</li>" for x in da.get("news_summary") or []) or '<li>無相關新聞</li>'}</ul>
 <h4>評分理由</h4>{_esc(da.get("score_rationale", ""))}</div>
+{news_html}
 <div class="blk"><h4>優勢</h4><ul>{''.join(f"<li>{_esc(p)}</li>" for p in da.get("pros") or [])}</ul>
 <h4>劣勢 / 風險</h4><ul>{''.join(f"<li>{_esc(c)}</li>" for c in da.get("cons") or [])}</ul></div>
 </div>
@@ -645,6 +682,7 @@ def render_report(
     trend_window: int = DEFAULT_WINDOW,
     rank_limit: int | None = None,
     show_channel_filter: bool = False,
+    news: list[dict] | None = None,
 ) -> str:
     now = datetime.now(ZoneInfo(TIMEZONE)).strftime("%Y-%m-%d %H:%M")
     funds = analysis.get("funds", [])
@@ -653,7 +691,7 @@ def render_report(
     scored = [f for f in funds if f.get("deep_analysis")]
 
     detail_cards = "".join(
-        _detail_card(f, nav_by_code, series if not compact else None)
+        _detail_card(f, nav_by_code, series if not compact else None, news)
         for f in funds
         if f.get("deep_analysis")
     ) or "<p>（本日無深度分析資料）</p>"
@@ -755,7 +793,7 @@ def render_report(
 
 
 def generate_report(date: str, out_file: Path | None = None) -> Path:
-    analysis, nav_by_code = load_report_data(date)
+    analysis, nav_by_code, news = load_report_data(date)
     series = build_time_series()
     html_out = render_report(
         analysis,
@@ -764,6 +802,7 @@ def generate_report(date: str, out_file: Path | None = None) -> Path:
         series=series,
         rank_limit=INDEX_RANK_LIMIT,
         show_channel_filter=True,
+        news=news,
     )
     path = out_file or REPORT_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -772,7 +811,7 @@ def generate_report(date: str, out_file: Path | None = None) -> Path:
 
 
 def _render_archive_page(date: str, dates: list[str]) -> str:
-    analysis, nav_by_code = load_report_data(date)
+    analysis, nav_by_code, news = load_report_data(date)
     return render_report(
         analysis,
         nav_by_code,
@@ -780,6 +819,7 @@ def _render_archive_page(date: str, dates: list[str]) -> str:
         compact=True,
         calendar_html=_calendar_panel(dates, date, base=""),
         nav_html=_navbar_html(is_latest=False, date=date),
+        news=news,
     )
 
 
@@ -806,7 +846,7 @@ def generate_archive(docs_dir: Path | None = None) -> tuple[Path, list[Path]]:
         pages.append(page)
 
     latest = dates[-1]
-    analysis, nav_by_code = load_report_data(latest)
+    analysis, nav_by_code, news = load_report_data(latest)
     index = docs_dir / "index.html"
     index.write_text(
         render_report(
@@ -819,6 +859,7 @@ def generate_archive(docs_dir: Path | None = None) -> tuple[Path, list[Path]]:
             series=series,
             rank_limit=INDEX_RANK_LIMIT,
             show_channel_filter=True,
+            news=news,
         ),
         encoding="utf-8",
     )
@@ -878,7 +919,7 @@ def generate_ranking(docs_dir: Path | None = None) -> Path:
     if not dates:
         raise FileNotFoundError("data/history 下無可生成之分析資料")
     latest = dates[-1]
-    analysis, nav_by_code = load_report_data(latest)
+    analysis, nav_by_code, news = load_report_data(latest)
     nav_html = _navbar_html(is_latest=True, date=latest, active="ranking")
     path = docs_dir / "ranking.html"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -924,7 +965,7 @@ def _render_trends_page(
 <style>{CSS}</style></head>
 <body>{nav_html}{body}</body></html>"""
 
-    latest_analysis, _ = load_report_data(dates[-1])
+    latest_analysis, _, _ = load_report_data(dates[-1])
     top = [f for f in latest_analysis.get("funds", []) if f.get("deep_analysis")]
     if not top:
         body = '<div class="wrap"><p class="trend-note">目前無深度分析基金可顯示趨勢。</p></div>'

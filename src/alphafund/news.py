@@ -158,10 +158,16 @@ def fetch_google_news(keyword: str, max_items: int = 8) -> list[NewsItem]:
             source=((e.get("source") or {}).get("title") or "").strip(),
             published_at=e.get("published") or "",
             summary=((e.get("summary") or "").strip()),
+            keywords=[keyword],
         )
         if not is_low_signal(item):
             items.append(item)
     return items
+
+
+def _normalize_title(title: str) -> str:
+    """正規化標題：小寫、去除標點與空白（供事件去重）。"""
+    return "".join(ch.lower() for ch in title if ch.isalnum() or "\u4e00" <= ch <= "\u9fff")
 
 
 def fetch_universe_news(
@@ -177,7 +183,7 @@ def fetch_universe_news(
     - 低訊號項目於 `fetch_google_news` 已過濾；再依 (title, url) 去重。
     """
     targets = funds[:limit] if limit is not None else funds
-    seen_items: set[tuple[str, str]] = set()
+    seen_items: set[str] = set()
     seen_specific: set[str] = set()
     seen_series: set[str] = set()
     out: list[NewsItem] = []
@@ -200,8 +206,9 @@ def fetch_universe_news(
                 logger.warning("Google News 查詢失敗: %s (%s)", kw, exc)
                 continue
             for it in items:
-                key = (it.title, it.url)
-                if key in seen_items:
+                # 事件去重：以正規化標題為 key（同事件跨媒體合併）
+                key = _normalize_title(it.title)
+                if not key or key in seen_items:
                     continue
                 seen_items.add(key)
                 out.append(it)
