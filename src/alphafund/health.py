@@ -98,7 +98,7 @@ def build_health_data() -> list[dict]:
         snap_path = day / "snapshot.json.gz"
         if snap_path.exists():
             news = len(_load_gz(snap_path).get("news", []))
-        expected = an.get("top_n", 25)
+        expected = an.get("top_n", 10)
         deep = an.get("deep_analyzed_count", 0)
         skip = statuses.get("quota_skipped", 0)
         err = statuses.get("error", 0)
@@ -243,7 +243,9 @@ def generate_health(docs_dir: Path | None = None) -> Path:
     if not entries:
         raise FileNotFoundError("data/history 下無健康資料")
     docs_dir = docs_dir or PROJECT_ROOT / "docs"
-    nav = _navbar_html(is_latest=True, date=latest_date(), active="health")
+    nav = _navbar_html(
+        is_latest=True, date=latest_date(), active="health", show_calendar=False
+    )
     html = render_health_page(entries, nav)
     path = docs_dir / "health.html"
     path.write_text(html, encoding="utf-8")

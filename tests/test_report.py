@@ -186,6 +186,20 @@ def test_navbar_has_cal_panel_opener():
     assert "openCalPanel" in html
 
 
+def test_navbar_no_calendar_on_ranking():
+    # 完整排名頁無日曆面板，不顯示「歷史日曆」選項
+    html = _navbar_html(is_latest=True, date="2026-08-01", active="ranking", show_calendar=False)
+    assert "歷史日曆" not in html
+    assert "openCalPanel" not in html
+    assert 'class="active" href="ranking.html"' in html
+
+
+def test_navbar_show_calendar_default_on_index():
+    # 最新報告頁保留日曆選項（預設行為）
+    html = _navbar_html(is_latest=True, date="2026-08-01", active="index")
+    assert "歷史日曆" in html
+
+
 def test_render_report_injects_calendar_and_nav():
     html = render_report(
         _sample_data(),

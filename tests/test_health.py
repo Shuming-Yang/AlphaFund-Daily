@@ -52,3 +52,14 @@ def test_build_health_data_reads_history():
         assert {"date", "universe", "deep", "expected_deep", "quota_skipped", "error", "providers", "news", "run_status", "missing"} <= set(e)
         assert e["deep"] > 0  # 每日皆有深度分析
         assert e["run_status"] in ("完整", "部分", "異常")
+
+
+def test_health_navbar_no_calendar():
+    """系統健康頁導覽不顯示「歷史日曆」選項（該頁無日曆面板）。"""
+    from alphafund.report import _navbar_html
+    from alphafund.pipeline import latest_date
+
+    nav = _navbar_html(is_latest=True, date=latest_date(), active="health", show_calendar=False)
+    assert "歷史日曆" not in nav
+    assert "openCalPanel" not in nav
+    assert 'class="active" href="health.html"' in nav

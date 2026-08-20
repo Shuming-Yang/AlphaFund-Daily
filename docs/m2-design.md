@@ -7,7 +7,7 @@
 M2 在 M1 資料之上加入分析層，產出「每日分析結果」作為 M3 報告的輸入：
 
 1. **規則初評分**（全體 Fund Universe）→ 完整排名（ADR-0003）。
-2. **前段基金 LLM 深度分析**（預設前 25 名）→ 新聞摘要、情緒、價值評分（40/40/20）、購入模式、優劣勢、綜合評級。
+2. **前段基金 LLM 深度分析**（預設前 10 名）→ 新聞摘要、情緒、價值評分（40/40/20）、購入模式、優劣勢、綜合評級。
 3. 合併為 `DailyAnalysis`，存於 `data/history/<日期>/analysis.json.gz`。
 
 ## 2. 架構
@@ -59,8 +59,8 @@ M1 快照 (universe+nav+news)
 ```json
 {
   "date": "2026-08-01",
-  "top_n": 25,
-  "deep_analyzed_count": 25,
+  "top_n": 10,
+  "deep_analyzed_count": 10,
   "funds": [
     {
       "fund_code": "LU...",

@@ -278,6 +278,41 @@ DCA加分 = clamp(DCA年報酬% × 0.4, 0, 10) × (穩定持續分 ÷ 35)
 
 各里程碑之詳細規劃與實作細節，將於後續以「grill-with-docs」技能逐項展開。
 
+## 系統架構與實作總覽（Implementation Overview）
+
+本節以實際程式碼（`src/alphafund/`）對應前述規格之實作，說明各模組職責與每日資料流。
+
+### 套件模組對應
+
+| 模組 | 職責 |
+| :--- | :--- |
+| [config.py](src/alphafund/config.py) | 設定與常數：通路代碼、幣別對應、評分參數、LLM 供應商鏈 |
+| [tdcc.py](src/alphafund/tdcc.py) | TDCC 基金資訊觀測站 HTTP 客戶端：cookie 暖機 + Referer 反 403、分頁抓取（ADR-0005） |
+| [filters.py](src/alphafund/filters.py) | 三重硬性過濾（通路 ∩ USD）→ 目標基金清單 |
+| [models.py](src/alphafund/models.py) | pydantic 資料模型：Fund / DividendRecord / NewsItem / Snapshot / Analysis |
+| [news.py](src/alphafund/news.py) | Google News RSS 抓取、低訊號過濾、基金特定／系列關鍵字匹配（ADR-0011） |
+| [scoring.py](src/alphafund/scoring.py) | 規則初評分：成長品質／穩定持續／收入加分／DCA／RR 風險／槓桿懲罰 |
+| [llm.py](src/alphafund/llm.py) | LLM 供應商抽象 + 供應商鏈自動備援（429/401/403 切換，ADR-0007） |
+| [analyzer.py](src/alphafund/analyzer.py) | 深度分析 Prompt 與回應解析：40/40/20 評分矩陣、評級一致性校準（ADR-0010） |
+| [pipeline.py](src/alphafund/pipeline.py) | 管線編排：M1 資料快照 → M2 分析 |
+| [report.py](src/alphafund/report.py) | HTML 報告、完整排名、趨勢頁生成 |
+| [trends.py](src/alphafund/trends.py) | 歷史時序 + 行內 SVG 趨勢圖（ADR-0008，無 JS 依賴） |
+| [health.py](src/alphafund/health.py) | 系統健康頁：每日執行狀態 + LLM 供應商使用分布 |
+| [cli.py](src/alphafund/cli.py) | `alphafund` 命令列入口（m1 / m2 / daily / report / archive / ranking / trends / health / universe） |
+
+### 每日資料流
+
+1. **M1 資料採集**（[pipeline.run_m1](src/alphafund/pipeline.py#L148-L191)）：依三通路 org_code 查上架基金 → 抓取全部境外基金記錄 → `filter_funds` 收斂為目標清單 → 抓取配息型候選之配息紀錄與全體風險等級 → Google News 依關鍵字抓新聞 → 存 `data/history/<date>/`（gzip JSON 快照）。
+2. **M2 分析**（[pipeline.run_m2](src/alphafund/pipeline.py#L317-L358)）：載入快照 → 全體基金規則初評分並確定性排序（初評分 ↓ → 長期報酬 ↓ → 名稱 ↑）→ 前段基金送 LLM 深度分析（供應商鏈自動備援）→ 存 `analysis.json.gz`。
+3. **M3+ 報告**：讀取 analysis + nav → 產出 `docs/index.html`（排名表 + 個案卡片 + 月曆）、`ranking.html`、`trends.html`、`health.html`、`archive/<日期>.html`。
+
+### 設計要點
+
+- **兩階段評分（ADR-0003）**：先以規則初評分篩選前段，再送 LLM 深度分析，控制 Token 成本並維持輸出一致性。
+- **穩定導向（ADR-0012）**：成長報酬以指數函數遞減、DCA 加分乘穩定性門控，確保「穩定成長 > 高波動」。
+- **可重現性**：初評分為純函式、排名排序確定、趨勢圖為伺服器端 SVG（無 JS 依賴），全流程可單元測試。
+- **成本控制（ADR-0002 / ADR-0007）**：LLM 全採免費 tier（openrouter → gemini → groq → cloudflare → nvidia），429/401/403 自動切換備援，全數用罄才停。
+
 ## 專案目錄結構（規劃）
 
 ```

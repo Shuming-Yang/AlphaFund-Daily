@@ -5,6 +5,7 @@ import argparse
 import logging
 import sys
 
+from .config import TOP_N_DEEP_ANALYSIS
 from .pipeline import run_daily, run_m1, run_m2
 
 
@@ -70,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.cmd == "m2":
             analysis = run_m2(
                 date=args.date,
-                top_n=args.top_n or 25,
+                top_n=args.top_n or TOP_N_DEEP_ANALYSIS,
                 llm=not args.no_llm,
                 save=not args.no_save,
             )
@@ -80,7 +81,7 @@ def main(argv: list[str] | None = None) -> int:
             snap, analysis = run_daily(
                 date=args.date,
                 news_limit=args.news_limit,
-                top_n=args.top_n or 25,
+                top_n=args.top_n or TOP_N_DEEP_ANALYSIS,
                 llm=not args.no_llm,
             )
             from .report import generate_archive
